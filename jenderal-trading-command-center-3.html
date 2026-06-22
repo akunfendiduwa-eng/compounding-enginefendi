@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<title>⬛ AI Trading Commander v3 — Institutional</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@400;600;700;900&display=swap');
+
+/* ═══════ DESIGN TOKENS ═══════ */
+:root{
+  --s0:#02020a;--s1:#06060f;--s2:#0a0a18;--s3:#0e0e20;--s4:#141428;--s5:#1a1a34;
+  --b0:rgba(255,255,255,.04);--b1:rgba(255,255,255,.08);--b2:rgba(255,255,255,.14);
+  --gold:#f5c842;--gd:#9a7d20;--gg:rgba(245,200,66,.12);
+  --em:#10b981;--ed:#065f46;--eg:rgba(16,185,129,.11);
+  --cr:#ef4444;--cd:#7f1d1d;--crg:rgba(239,68,68,.11);
+  --eb:#3b82f6;--ebg:rgba(59,130,246,.11);
+  --vi:#8b5cf6;--vig:rgba(139,92,246,.11);
+  --am:#f59e0b;--amg:rgba(245,158,11,.11);
+  --cy:#06b6d4;--cyg:rgba(6,182,212,.10);
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#475569;--t4:#1e293b;
+  --fi:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;--fd:'Orbitron',monospace;
+  --r:8px;--rs:5px;--rl:12px;
+}
+
+/* ═══════ RESET ═══════ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{background:var(--s0);color:var(--t1);font-family:var(--fi);font-size:14px;min-height:100%;overflow-x:hidden;line-height:1.5;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.018) 2px,rgba(0,0,0,.018) 4px);}
+
+/* ═══════ KEYFRAMES ═══════ */
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,.35)}70%{box-shadow:0 0 0 8px rgba(245,200,66,0)}}
+@keyframes pulse-red {0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)} 70%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.12}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rotSpin{to{transform:rotate(360deg)}}
+@keyframes lockPulse{0%,100%{background:rgba(239,68,68,.05)}50%{background:rgba(239,68,68,.12)}}
+@keyframes hfSlide{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes scanH{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes gaugeDgr{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 20px rgba(245,200,66,.28)}50%{box-shadow:0 0 38px rgba(245,200,66,.58)}}
+@keyframes cbFlash{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes mBad{from{box-shadow:0 0 35px rgba(239,68,68,.35)}to{box-shadow:0 0 70px rgba(239,68,68,.65)}}
+@keyframes mGood{from{box-shadow:0 0 30px rgba(16,185,129,.28)}to{box-shadow:0 0 65px rgba(16,185,129,.55)}}
+@keyframes mWarn{from{box-shadow:0 0 30px rgba(245,200,66,.28)}to{box-shadow:0 0 65px rgba(245,200,66,.55)}}
+@keyframes wPulse{from{box-shadow:0 0 7px rgba(0,212,255,.18)}to{box-shadow:0 0 34px rgba(0,212,255,.52)}}
+
+/* ═══════ SCAN LINE ═══════ */
+.scanline{position:fixed;top:0;left:0;width:100%;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(59,130,246,.25),transparent);
+  animation:scanH 8s linear infinite;pointer-events:none;z-index:9996;}
+
+/* ═══════ KILL SWITCH OVERLAY ═══════ */
+.kill-overlay{display:none;position:fixed;inset:0;z-index:9990;background:rgba(2,2,10,.97);
+  backdrop-filter:blur(8px);align-items:center;justify-content:center;flex-direction:column;
+  gap:20px;text-align:center;padding:30px;animation:lockPulse 2s ease-in-out infinite;}
+.kill-overlay.active{display:flex;}
+.kill-icon{font-size:72px;animation:pulse-red 1.5s ease-in-out infinite;}
+.kill-title{font-family:var(--fd);font-size:20px;font-weight:900;color:var(--cr);
+  letter-spacing:4px;text-shadow:0 0 30px rgba(239,68,68,.7);}
+.kill-msg{font-family:var(--fm);font-size:12px;color:var(--t2);max-width:520px;line-height:1.85;}
+.kill-timer{font-family:var(--fd);font-size:42px;font-weight:900;color:var(--cr);letter-spacing:6px;}
+.kill-rule{font-family:var(--fm);font-size:11px;color:var(--cr);padding:12px 20px;
+  border:1px solid rgba(239,68,68,.3);border-radius:var(--r);background:rgba(239,68,68,.06);letter-spacing:1.5px;}
+
+/* ═══════ BLACK SWAN BANNER ═══════ */
+.swan-banner{display:none;background:linear-gradient(90deg,rgba(239,68,68,.14),rgba(245,158,11,.14),rgba(239,68,68,.14));
+  border-bottom:1px solid rgba(239,68,68,.35);padding:9px 20px;text-align:center;
+  font-family:var(--fd);font-size:10px;letter-spacing:2.5px;color:var(--cr);
+  animation:cbFlash .8s ease-in-out infinite;position:sticky;top:0;z-index:300;}
+.swan-banner.active{display:block;}
+
+/* ═══════ AI POPUP ═══════ */
+.ai-popup-bg{display:none;position:fixed;inset:0;background:rgba(2,2,10,.92);backdrop-filter:blur(6px);
+  z-index:9000;align-items:center;justify-content:center;padding:20px;}
+.ai-popup-bg.open{display:flex;}
+.ai-popup{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rl);padding:26px;
+  width:100%;max-width:580px;max-height:85vh;overflow-y:auto;position:relative;animation:fadeIn .3s ease;}
+.ai-popup-x{position:absolute;top:13px;right:13px;background:none;border:1px solid var(--b1);
+  border-radius:var(--rs);color:var(--t3);width:28px;height:28px;cursor:pointer;font-size:14px;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.ai-popup-x:hover{color:var(--t1);border-color:var(--b2);}
+.ai-response{font-family:var(--fm);font-size:11px;color:var(--t2);line-height:1.9;white-space:pre-wrap;margin-top:12px;}
+.ai-thinking{display:flex;align-items:center;gap:10px;color:var(--eb);font-family:var(--fm);font-size:11px;padding:8px 0;}
+.ai-thinking .spin{animation:rotSpin .8s linear infinite;font-size:16px;display:inline-block;}
+
+/* ═══════ MENTOR POPUP ═══════ */
+.mentor-bg{display:none;position:fixed;inset:0;background:rgba(2,2,10,.93);backdrop-filter:blur(6px);
+  z-index:9200;align-items:center;justify-content:center;padding:20px;}
+.mentor-bg.open{display:flex;}
+.mentor-box{background:linear-gradient(135deg,#1c0006,#0e0003,#1c0006);
+  border:2px solid var(--cr);border-radius:var(--rl);padding:30px 26px;width:100%;max-width:520px;
+  text-align:center;position:relative;animation:mBad .65s ease-in-out infinite alternate;
+  box-shadow:0 0 80px rgba(239,68,68,.45);}
+.mentor-box.good{background:linear-gradient(135deg,#001c0e,#000e06,#001c0e);
+  border-color:var(--em);box-shadow:0 0 80px rgba(16,185,129,.4);animation:mGood .8s ease-in-out infinite alternate;}
+.mentor-box.caution{background:linear-gradient(135deg,#1a1000,#0e0900,#1a1000);
+  border-color:var(--gold);box-shadow:0 0 80px rgba(245,200,66,.4);animation:mWarn .8s ease-in-out infinite alternate;}
+.mentor-emoji{font-size:52px;display:block;margin-bottom:14px;}
+.mentor-title{font-family:var(--fd);font-size:13px;font-weight:900;letter-spacing:3px;
+  margin-bottom:16px;animation:cbFlash .6s ease-in-out infinite;color:var(--cr);}
+.mentor-box.good .mentor-title{color:var(--em);}
+.mentor-box.caution .mentor-title{color:var(--gold);animation:none;}
+.mentor-msg{font-family:var(--fm);font-size:12px;color:var(--t1);line-height:1.95;margin-bottom:18px;text-align:left;}
+.mentor-msg strong{color:var(--gold);}
+.mentor-box.good .mentor-msg strong{color:var(--em);}
+.mentor-rule{font-family:var(--fd);font-size:10px;letter-spacing:1.5px;padding:12px;
+  border-radius:var(--rs);margin-bottom:20px;color:var(--cr);
+  border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07);}
+.mentor-box.good .mentor-rule{color:var(--em);border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.07);}
+.mentor-box.caution .mentor-rule{color:var(--gold);border-color:rgba(245,200,66,.3);background:rgba(245,200,66,.07);}
+.mentor-btn{width:100%;padding:12px;border:none;border-radius:var(--rs);cursor:pointer;
+  font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--cr),var(--cd));color:#fff;transition:all .2s;}
+.mentor-box.good .mentor-btn{background:linear-gradient(135deg,var(--em),var(--ed));color:#050507;}
+.mentor-box.caution .mentor-btn{background:linear-gradient(135deg,var(--gold),#cc9900);color:#050507;}
+.mentor-btn:hover{transform:translateY(-1px);filter:brightness(1.1);}
+
+/* ═══════ COMMAND BAR ═══════ */
+.cmd-bar{background:var(--s1);border-bottom:1px solid var(--b0);padding:0 18px;
+  display:flex;align-items:center;justify-content:space-between;height:52px;
+  position:sticky;top:0;z-index:200;box-shadow:0 1px 30px rgba(0,0,0,.6);}
+.cmd-brand{display:flex;align-items:center;gap:10px;}
+.cmd-logo{width:32px;height:32px;border-radius:6px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),#c87e00);
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  box-shadow:0 0 16px rgba(245,200,66,.3);animation:logoPulse 3.5s ease-in-out infinite;}
+.cmd-name{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--gold);letter-spacing:2px;}
+.cmd-ver{font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:1px;margin-top:1px;}
+.cmd-mid{display:flex;align-items:center;gap:6px;flex:1;padding:0 14px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;}
+.cmd-mid::-webkit-scrollbar{display:none;}
+.cmd-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.cmd-clock{font-family:var(--fm);font-size:11px;color:var(--t3);letter-spacing:1.5px;}
+
+/* ═══════ PRICE CHIPS ═══════ */
+.p-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:var(--rs);
+  border:1px solid var(--b0);background:rgba(255,255,255,.018);flex-shrink:0;}
+.p-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:1.5px;}
+.p-val{font-family:var(--fm);font-size:12px;font-weight:700;letter-spacing:.5px;transition:color .5s;}
+.v-gold{color:var(--gold);}
+.v-rup{color:var(--cr);}
+.v-rdn{color:var(--em);}
+.v-cyn{color:var(--cy);}
+.v-neu{color:var(--t2);}
+.p-delta{font-family:var(--fm);font-size:9px;padding:1px 5px;border-radius:3px;}
+.pd-up{background:rgba(16,185,129,.12);color:var(--em);}
+.pd-dn{background:rgba(239,68,68,.12);color:var(--cr);}
+.sig-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:var(--rs);
+  font-family:var(--fd);font-size:8px;font-weight:700;letter-spacing:2px;flex-shrink:0;}
+.pill-buy{background:rgba(16,185,129,.12);color:var(--em);border:1px solid rgba(16,185,129,.28);animation:blink 2.5s ease-in-out infinite;}
+.pill-sell{background:rgba(239,68,68,.12);color:var(--cr);border:1px solid rgba(239,68,68,.28);animation:blink 2.5s ease-in-out infinite;}
+.pill-neu{background:rgba(245,200,66,.07);color:var(--gold);border:1px solid rgba(245,200,66,.18);}
+.api-ind{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.api-dot{width:6px;height:6px;border-radius:50%;}
+.api-dot.live{background:var(--em);animation:blink 1.8s ease-in-out infinite;}
+.api-dot.loading{background:var(--gold);animation:blink .45s ease-in-out infinite;}
+.api-dot.error{background:var(--cr);}
+.api-txt{font-family:var(--fm);font-size:8px;color:var(--t3);}
+.upd-lbl{font-family:var(--fm);font-size:8px;color:var(--t3);flex-shrink:0;}
+
+/* ═══════ HF TICKER ═══════ */
+.hf-ticker{background:var(--s1);border-bottom:1px solid var(--b0);overflow:hidden;height:26px;}
+.hf-inner{display:flex;align-items:center;height:100%;animation:hfSlide 30s linear infinite;white-space:nowrap;width:max-content;}
+.hf-item{font-family:var(--fm);font-size:10px;color:var(--t3);padding:0 18px;border-right:1px solid var(--b0);letter-spacing:.5px;}
+.hf-item.up{color:var(--em);}
+.hf-item.dn{color:var(--cr);}
+.hf-item span{color:var(--t3);margin-right:5px;}
+
+/* ═══════ NAV BAR ═══════ */
+.nav-bar{background:var(--s1);border-bottom:1px solid var(--b0);display:flex;overflow-x:auto;scrollbar-width:none;padding:0 14px;}
+.nav-bar::-webkit-scrollbar{display:none;}
+.nav-btn{flex-shrink:0;padding:11px 15px;background:none;border:none;color:var(--t3);
+  font-family:var(--fi);font-size:12px;font-weight:500;cursor:pointer;position:relative;
+  transition:color .2s;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.nav-btn::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:var(--gold);transform:scaleX(0);transition:transform .25s;border-radius:1px;}
+.nav-btn:hover{color:var(--t2);}
+.nav-btn.active{color:var(--t1);}
+.nav-btn.active::after{transform:scaleX(1);}
+.nav-badge{padding:1px 6px;border-radius:10px;font-size:8px;font-weight:700;font-family:var(--fm);
+  background:rgba(239,68,68,.2);color:var(--cr);}
+.nav-badge.em{background:rgba(16,185,129,.2);color:var(--em);}
+
+/* ═══════ PANES ═══════ */
+.pane{display:none;padding:18px;max-width:1100px;margin:0 auto;}
+.pane.active{display:block;animation:fadeIn .25s ease;}
+
+/* ═══════ CARD ═══════ */
+.card{background:var(--s2);border:1px solid var(--b0);border-radius:var(--r);padding:18px;
+  margin-bottom:14px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(245,200,66,.18),transparent);}
+.card-title{font-family:var(--fi);font-size:11px;font-weight:600;color:var(--t2);
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ct-badge{margin-left:auto;padding:2px 8px;border-radius:10px;font-size:9px;font-family:var(--fm);
+  background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);}
+
+/* ═══════ GRIDS ═══════ */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+@media(max-width:700px){.g2,.g3,.g4,.g5{grid-template-columns:1fr;}}
+@media(max-width:900px){.g3,.g4,.g5{grid-template-columns:1fr 1fr;}}
+
+/* ═══════ STATS ═══════ */
+.stat{background:var(--s3);border:1px solid var(--b0);border-radius:var(--r);padding:13px;text-align:center;}
+.stat-lbl{font-size:9px;font-weight:600;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:var(--fm);}
+.stat-val{font-family:var(--fm);font-size:20px;font-weight:700;color:var(--t1);line-height:1;}
+.stat-sub{font-family:var(--fm);font-size:9px;color:var(--t3);margin-top:3px;}
+.stat-val.g{color:var(--em);}.stat-val.r{color:var(--cr);}.stat-val.gold{color:var(--gold);}
+.stat-val.b{color:var(--eb);}.stat-val.v{color:var(--vi);}
+
+/* ═══════ FORMS ═══════ */
+.fg{margin-bottom:12px;}
+.fl{display:block;font-size:10px;font-weight:500;color:var(--t3);letter-spacing:.5px;margin-bottom:5px;text-transform:uppercase;}
+.fi,.fs,.ft{width:100%;background:var(--s3);border:1px solid var(--b1);border-radius:var(--rs);
+  color:var(--t1);font-family:var(--fm);font-size:12px;padding:9px 12px;outline:none;
+  -webkit-appearance:none;transition:border-color .2s,box-shadow .2s;}
+.fi:focus,.fs:focus,.ft:focus{border-color:rgba(245,200,66,.4);box-shadow:0 0 0 3px rgba(245,200,66,.07);}
+.fs option{background:var(--s3);color:var(--t1);}
+.ft{min-height:80px;resize:vertical;font-size:11px;line-height:1.6;}
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--b1);border-radius:1px;outline:none;margin-top:8px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(245,200,66,.4);}
+.pw-wrap{position:relative;}
+.pw-wrap .fi{padding-right:40px;}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;}
+.pw-eye:hover{color:var(--t1);}
+
+/* ═══════ BUTTONS ═══════ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:none;border-radius:var(--rs);
+  font-family:var(--fi);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-primary{background:var(--gold);color:#050505;box-shadow:0 2px 12px rgba(245,200,66,.25);}
+.btn-primary:hover{box-shadow:0 4px 20px rgba(245,200,66,.4);transform:translateY(-1px);}
+.btn-success{background:var(--em);color:#050505;box-shadow:0 2px 12px rgba(16,185,129,.2);}
+.btn-success:hover{box-shadow:0 4px 20px rgba(16,185,129,.35);transform:translateY(-1px);}
+.btn-danger{background:var(--cr);color:#fff;box-shadow:0 2px 12px rgba(239,68,68,.2);}
+.btn-danger:hover{box-shadow:0 4px 20px rgba(239,68,68,.35);transform:translateY(-1px);}
+.btn-violet{background:var(--vi);color:#fff;box-shadow:0 2px 12px rgba(139,92,246,.2);}
+.btn-violet:hover{box-shadow:0 4px 20px rgba(139,92,246,.35);transform:translateY(-1px);}
+.btn-blue{background:var(--eb);color:#fff;box-shadow:0 2px 12px rgba(59,130,246,.2);}
+.btn-blue:hover{box-shadow:0 4px 20px rgba(59,130,246,.35);transform:translateY(-1px);}
+.btn-ghost{background:transparent;border:1px solid var(--b1);color:var(--t2);}
+.btn-ghost:hover{border-color:var(--b2);color:var(--t1);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+
+/* ═══════ GAUGE ═══════ */
+.gauge-wrap{margin-bottom:14px;}
+.gauge-header{display:flex;justify-content:space-between;margin-bottom:6px;}
+.gauge-lbl{font-family:var(--fm);font-size:10px;color:var(--t3);}
+.gauge-val{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--t1);}
+.gauge-trk{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.gauge-fill{height:100%;border-radius:3px;transition:width .6s ease,background .4s;}
+.gf-safe{background:linear-gradient(90deg,var(--em),#34d399);}
+.gf-warn{background:linear-gradient(90deg,var(--gold),var(--am));}
+.gf-danger{background:linear-gradient(90deg,var(--am),var(--cr));}
+.gf-kill{background:var(--cr);animation:gaugeDgr .5s ease-in-out infinite;}
+
+/* ═══════ KELLY BOX ═══════ */
+.kelly-box{background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(16,185,129,.02));
+  border:1px solid rgba(16,185,129,.2);border-radius:var(--r);padding:18px;text-align:center;margin-top:14px;}
+.kelly-lbl{font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:2px;margin-bottom:5px;}
+.kelly-val{font-family:var(--fd);font-size:36px;font-weight:900;color:var(--em);text-shadow:0 0 24px rgba(16,185,129,.4);letter-spacing:2px;}
+.kelly-note{font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:6px;}
+
+/* ═══════ RADAR ═══════ */
+.radar-wrap{background:var(--s3);border:1px solid var(--b0);border-radius:var(--r);padding:14px;margin-bottom:14px;}
+canvas{display:block;width:100%;border-radius:var(--rs);}
+.radar-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;}
+.rl-item{display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:10px;color:var(--t3);}
+.rl-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+/* ═══════ AI BOX ═══════ */
+.ai-box{margin-top:12px;padding:14px;border-radius:var(--r);display:none;animation:fadeIn .3s ease;}
+.ai-box.active{display:block;}
+.ai-box.bull{background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);}
+.ai-box.bear{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);}
+.ai-box.neutral{background:rgba(245,200,66,.04);border:1px solid rgba(245,200,66,.15);}
+.ai-box.info{background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.15);}
+.ai-title{font-family:var(--fd);font-size:10px;letter-spacing:2px;margin-bottom:10px;}
+.ai-body{font-family:var(--fm);font-size:11px;color:var(--t2);line-height:1.85;}
+
+/* ═══════ TABLE ═══════ */
+.tbl{width:100%;border-collapse:collapse;font-family:var(--fm);font-size:11px;}
+.tbl th{background:rgba(255,255,255,.03);color:var(--t3);font-size:9px;font-family:var(--fi);
+  font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:9px 10px;
+  text-align:left;border-bottom:1px solid var(--b0);white-space:nowrap;}
+.tbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.025);color:var(--t2);vertical-align:middle;white-space:nowrap;}
+.tbl tr:hover td{background:rgba(255,255,255,.015);}
+.tw{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--b1) transparent;}
+.tw::-webkit-scrollbar{height:3px;}
+.tw::-webkit-scrollbar-thumb{background:var(--b1);}
+.badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700;}
+.b-buy{background:rgba(16,185,129,.12);color:var(--em);border:1px solid rgba(16,185,129,.25);}
+.b-sell{background:rgba(239,68,68,.12);color:var(--cr);border:1px solid rgba(239,68,68,.25);}
+.b-win{background:rgba(16,185,129,.08);color:var(--em);}
+.b-loss{background:rgba(239,68,68,.08);color:var(--cr);}
+.b-open{background:rgba(245,200,66,.08);color:var(--gold);}
+.b-be{background:rgba(59,130,246,.08);color:var(--eb);}
+
+/* ═══════ BROKER CARDS ═══════ */
+.broker-card{background:var(--s3);border:1px solid var(--b0);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;}
+.broker-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--b1);}
+.broker-card.connected::before{background:var(--em);}
+.broker-card.disconnected::before{background:var(--cr);}
+.broker-card.pending::before{background:var(--gold);}
+.broker-logo{font-size:11px;font-weight:700;font-family:var(--fm);color:var(--t1);margin-bottom:6px;}
+.broker-name{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:10px;}
+.broker-row{display:flex;justify-content:space-between;margin-bottom:5px;}
+.broker-key{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.broker-val{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--t1);}
+.broker-val.pos{color:var(--em);}.broker-val.neg{color:var(--cr);}
+.broker-status{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;
+  font-size:9px;font-weight:700;font-family:var(--fm);letter-spacing:1px;margin-top:8px;}
+.bs-live{background:rgba(16,185,129,.12);color:var(--em);border:1px solid rgba(16,185,129,.25);}
+.bs-off{background:rgba(239,68,68,.12);color:var(--cr);border:1px solid rgba(239,68,68,.25);}
+.bs-wait{background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);}
+
+/* ═══════ PSYCH TAGS ═══════ */
+.psych{display:flex;gap:6px;flex-wrap:wrap;}
+.ptag{padding:4px 10px;border:1px solid var(--b0);border-radius:20px;font-size:10px;cursor:pointer;
+  font-family:var(--fm);color:var(--t3);transition:all .2s;background:transparent;}
+.ptag.on{background:rgba(245,200,66,.08);border-color:rgba(245,200,66,.3);color:var(--gold);}
+.ptag[data-risk].on{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:var(--cr);}
+
+/* ═══════ KEY CARD (settings) ═══════ */
+.key-card{background:var(--s3);border:1px solid var(--b0);border-radius:var(--r);padding:18px;margin-bottom:12px;}
+.key-provider{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px;}
+.key-desc{font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.6;}
+.key-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-family:var(--fm);font-size:9px;font-weight:700;}
+.ks-on{background:rgba(16,185,129,.12);color:var(--em);border:1px solid rgba(16,185,129,.25);}
+.ks-off{background:rgba(239,68,68,.1);color:var(--cr);border:1px solid rgba(239,68,68,.2);}
+
+/* ═══════ CALENDAR ═══════ */
+.ev-row{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--b0);
+  border-radius:var(--rs);margin-bottom:7px;transition:border-color .2s;cursor:pointer;}
+.ev-row:hover{border-color:var(--b1);}
+.ev-row.soon{border-left:3px solid var(--cr);}
+.ev-row.past{opacity:.5;}
+.ev-dt{font-family:var(--fm);font-size:10px;color:var(--t3);min-width:68px;flex-shrink:0;line-height:1.6;}
+.ev-imp{padding:2px 6px;border-radius:3px;font-size:8px;font-family:var(--fi);font-weight:700;
+  letter-spacing:.5px;min-width:48px;text-align:center;flex-shrink:0;margin-top:2px;}
+.imp-h{background:rgba(239,68,68,.15);color:var(--cr);border:1px solid rgba(239,68,68,.28);}
+.imp-m{background:rgba(245,158,11,.15);color:var(--am);border:1px solid rgba(245,158,11,.28);}
+.imp-l{background:rgba(100,116,139,.12);color:var(--t3);border:1px solid rgba(100,116,139,.2);}
+.ev-body{flex:1;min-width:0;}
+.ev-name{font-size:13px;font-weight:500;color:var(--t1);margin-bottom:3px;}
+.ev-meta{font-family:var(--fm);font-size:10px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap;}
+.ev-ai-panel{display:none;margin-top:10px;padding:12px;border-radius:var(--rs);
+  background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.15);animation:fadeIn .3s ease;}
+.ev-ai-panel.open{display:block;}
+.ev-ai-title{font-family:var(--fi);font-size:10px;font-weight:600;color:var(--eb);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.ev-ai-body{font-family:var(--fm);font-size:11px;color:var(--t2);line-height:1.85;}
+.beat{color:var(--em);font-weight:700;}.miss{color:var(--cr);font-weight:700;}
+
+/* ═══════ MISC ═══════ */
+.sep{height:1px;background:var(--b0);margin:14px 0;}
+.no-data{text-align:center;padding:40px 20px;color:var(--t3);font-family:var(--fm);font-size:11px;}
+.no-data .nd-ico{font-size:28px;display:block;margin-bottom:10px;opacity:.28;}
+.idr-tag{display:inline-flex;align-items:center;gap:3px;font-family:var(--fm);font-size:10px;
+  color:var(--cy);background:rgba(6,182,212,.07);border:1px solid rgba(6,182,212,.15);
+  border-radius:3px;padding:1px 7px;margin-top:4px;}
+.live-tag{font-family:var(--fm);font-size:8px;background:rgba(16,185,129,.08);color:var(--em);
+  border:1px solid rgba(16,185,129,.2);border-radius:3px;padding:1px 6px;letter-spacing:1px;}
+.section-sep{display:flex;align-items:center;gap:10px;margin:18px 0;
+  font-family:var(--fi);font-size:10px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
+.section-sep::before,.section-sep::after{content:'';flex:1;height:1px;background:var(--b0);}
+.toast{position:fixed;bottom:20px;right:16px;z-index:8500;background:var(--s4);
+  border:1px solid var(--b2);border-left:3px solid var(--gold);border-radius:var(--rs);
+  padding:10px 14px;font-family:var(--fm);font-size:11px;color:var(--t1);
+  transform:translateX(120%);transition:transform .3s;max-width:260px;}
+.toast.show{transform:translateX(0);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--s1);}
+::-webkit-scrollbar-thumb{background:var(--b1);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+
+<!-- ══ KILL SWITCH OVERLAY ══════════════════════════════ -->
+<div class="kill-overlay" id="killOverlay">
+  <div class="kill-icon">⛔</div>
+  <div class="kill-title">TRADING LOCKED — CAPITAL PRESERVATION</div>
+  <div class="kill-msg" id="killMsg">Dashboard dikunci oleh sistem Anti-Overtrading. Anda telah mencapai batas kerugian harian.</div>
+  <div class="kill-timer" id="killTimer">00:00:00</div>
+  <div class="kill-rule">⛔ LINDUNGI MODAL — DISIPLIN ADALAH STRATEGI TERBAIK</div>
+  <div style="display:flex;gap:8px;margin-top:14px;">
+    <input class="fi" type="password" id="killPinInput" placeholder="Override PIN" style="max-width:150px;text-align:center;">
+    <button class="btn btn-ghost btn-sm" onclick="tryUnlock()">UNLOCK</button>
+  </div>
+</div>
+
+<!-- ══ BLACK SWAN BANNER ════════════════════════════════ -->
+<div class="swan-banner" id="swanBanner">
+  ⚫ BLACK SWAN ALERT — HIGH-IMPACT EVENT DETECTED · EXTREME VOLATILITY RISK FOR XAUUSD ⚫
+</div>
+
+<!-- ══ AI POPUP ════════════════════════════════════════ -->
+<div class="ai-popup-bg" id="aiPopupBg">
+  <div class="ai-popup">
+    <button class="ai-popup-x" onclick="closeAIPopup()">✕</button>
+    <div class="card-title"><span>🤖</span><span id="aiPopupTitle">AI ANALYSIS</span></div>
+    <div id="aiPopupContent"><div class="ai-thinking"><span class="spin">⟳</span>AI sedang menganalisis…</div></div>
+  </div>
+</div>
+
+<!-- ══ MENTOR POPUP ════════════════════════════════════ -->
+<div class="mentor-bg" id="mentorBg">
+  <div class="mentor-box" id="mentorBox">
+    <span class="mentor-emoji" id="mentorEmoji">⚠️</span>
+    <div class="mentor-title" id="mentorTitle">PERINGATAN!</div>
+    <div class="mentor-msg" id="mentorMsg"></div>
+    <div class="mentor-rule" id="mentorRule"></div>
+    <button class="mentor-btn" onclick="closeMentor()">✅ SAYA MENGERTI — TUTUP</button>
+  </div>
+</div>
+
+<!-- ══ COMMAND BAR ══════════════════════════════════════ -->
+<header class="cmd-bar">
+  <div class="cmd-brand">
+    <div class="cmd-logo">⬛</div>
+    <div>
+      <div class="cmd-name">AI TRADING COMMANDER</div>
+      <div class="cmd-ver">v3 · INSTITUTIONAL SPEC · AI POWERED</div>
+    </div>
+  </div>
+  <div class="cmd-mid">
+    <!-- XAU/USD Chip -->
+    <div class="p-chip">
+      <span class="p-lbl">XAU/USD</span>
+      <span class="p-val v-gold" id="chip-xau">—</span>
+      <span class="p-delta" id="chip-xau-delta">—</span>
+    </div>
+    <!-- DXY Chip -->
+    <div class="p-chip">
+      <span class="p-lbl">DXY</span>
+      <span class="p-val v-neu" id="chip-dxy">—</span>
+      <span class="p-delta" id="chip-dxy-delta">—</span>
+    </div>
+    <!-- IDR Chip -->
+    <div class="p-chip">
+      <span class="p-lbl">USD/IDR</span>
+      <span class="p-val v-cyn" id="chip-idr">—</span>
+    </div>
+    <!-- Signal pill -->
+    <div class="sig-pill pill-neu" id="chip-signal">⚖ NEUTRAL</div>
+    <!-- API status -->
+    <div class="api-ind">
+      <div class="api-dot loading" id="api-dot"></div>
+      <span class="api-txt" id="api-txt">INIT</span>
+    </div>
+    <span class="upd-lbl" id="api-upd">—</span>
+  </div>
+  <div class="cmd-right">
+    <div class="cmd-clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- ══ HF TICKER ════════════════════════════════════════ -->
+<div class="hf-ticker">
+  <div class="hf-inner" id="hf-inner">
+    <div class="hf-item"><span>GOLD</span><span id="hf-gold">Loading…</span></div>
+    <div class="hf-item"><span>DXY</span><span id="hf-dxy">—</span></div>
+    <div class="hf-item"><span>USD/IDR</span><span id="hf-idr">—</span></div>
+    <div class="hf-item"><span>10Y UST</span><span id="hf-10y">—</span></div>
+    <div class="hf-item up"><span>SESSION</span><span id="hf-sess">—</span></div>
+    <!-- Duplicate for seamless loop -->
+    <div class="hf-item"><span>GOLD</span><span id="hf-gold2">Loading…</span></div>
+    <div class="hf-item"><span>DXY</span><span id="hf-dxy2">—</span></div>
+    <div class="hf-item"><span>USD/IDR</span><span id="hf-idr2">—</span></div>
+    <div class="hf-item"><span>10Y UST</span><span id="hf-10y2">—</span></div>
+    <div class="hf-item up"><span>SESSION</span><span id="hf-sess2">—</span></div>
+  </div>
+</div>
+
+<!-- ══ NAVIGATION ═══════════════════════════════════════ -->
+<nav class="nav-bar">
+  <button class="nav-btn active" onclick="goTab('overview',this)">📊 Overview</button>
+  <button class="nav-btn" onclick="goTab('brokers',this)">🔗 Multi-Broker</button>
+  <button class="nav-btn" onclick="goTab('risk',this)">⚖ Risk Engine</button>
+  <button class="nav-btn" onclick="goTab('radar',this)">🎯 Order Flow</button>
+  <button class="nav-btn" onclick="goTab('aicore',this)">🤖 AI Core <span class="nav-badge" id="ai-badge">OFFLINE</span></button>
+  <button class="nav-btn" onclick="goTab('journal',this)">📋 Journal <span class="nav-badge em" id="j-badge">0</span></button>
+  <button class="nav-btn" onclick="goTab('calendar',this)">📅 Calendar</button>
+  <button class="nav-btn" onclick="goTab('settings',this)">⚙ Settings</button>
+</nav>
+
+<!-- ══════════════════════════════════════
+     TAB 1 — OVERVIEW
+══════════════════════════════════════ -->
+<div class="pane active" id="pane-overview">
+
+  <!-- Signal Panel -->
+  <div class="card" id="sig-card" style="background:linear-gradient(135deg,rgba(245,200,66,.04),transparent);border-color:rgba(245,200,66,.15);">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="font-size:28px;" id="sig-icon">⚖️</div>
+      <div style="flex:1;">
+        <div style="font-family:var(--fd);font-size:15px;font-weight:700;letter-spacing:2px;margin-bottom:4px;" id="sig-text">AWAITING MARKET DATA…</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--t3);" id="sig-sub">Connecting to GoldAPI.io…</div>
+      </div>
+      <button class="btn btn-violet btn-sm" onclick="askAIMarket()">🧠 ASK AI CRO</button>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="g5" style="margin-bottom:14px;">
+    <div class="stat"><div class="stat-lbl">XAU PRICE</div><div class="stat-val gold" id="kv-xau">—</div><div class="stat-sub" id="kv-xau-chg">—</div></div>
+    <div class="stat"><div class="stat-lbl">DXY INDEX</div><div class="stat-val" id="kv-dxy">—</div><div class="stat-sub" id="kv-dxy-chg">—</div></div>
+    <div class="stat"><div class="stat-lbl">USD/IDR</div><div class="stat-val b" id="kv-idr">—</div></div>
+    <div class="stat"><div class="stat-lbl">WIN RATE</div><div class="stat-val g" id="kv-wr">—</div><div class="stat-sub" id="kv-wr-sub">—</div></div>
+    <div class="stat"><div class="stat-lbl">TOTAL P&L</div><div class="stat-val" id="kv-pl">$0.00</div><div class="stat-sub" id="kv-pl-idr">Rp —</div></div>
+  </div>
+
+  <div class="g2">
+    <!-- Drawdown -->
+    <div class="card">
+      <div class="card-title">🛡 DAILY DRAWDOWN MONITOR <span class="ct-badge" id="dd-badge">SAFE</span></div>
+      <div class="g2" style="margin-bottom:12px;">
+        <div class="fg" style="margin-bottom:0;"><label class="fl">Modal Awal Hari (USD)</label><input class="fi" type="number" id="dd-modal" value="1000" oninput="calcDD()"></div>
+        <div class="fg" style="margin-bottom:0;"><label class="fl">Loss Hari Ini (USD)</label><input class="fi" type="number" id="dd-loss" value="0" step="0.01" oninput="calcDD()"></div>
+      </div>
+      <div class="fg" style="margin-bottom:8px;">
+        <label class="fl">Max Daily Loss Limit (%)</label>
+        <input type="range" id="dd-limit" min="1" max="10" value="5" oninput="calcDD()">
+        <div style="text-align:right;font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:3px;" id="dd-limit-lbl">5%</div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-header"><span class="gauge-lbl">DAILY LOSS METER</span><span class="gauge-val" id="dd-pct">0.0%</span></div>
+        <div class="gauge-trk"><div class="gauge-fill gf-safe" id="dd-fill" style="width:0%"></div></div>
+      </div>
+      <div style="font-family:var(--fm);font-size:9px;color:var(--t3);">
+        <span style="color:var(--em)">●</span> 0–40% SAFE &nbsp;|&nbsp;
+        <span style="color:var(--gold)">●</span> 40–70% CAUTION &nbsp;|&nbsp;
+        <span style="color:var(--cr)">●</span> ≥ LIMIT → KILL SWITCH
+      </div>
+    </div>
+    <!-- Sessions -->
+    <div class="card">
+      <div class="card-title">🕐 MARKET SESSIONS</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="text-align:center;padding:12px;background:var(--s3);border:1px solid var(--b0);border-radius:var(--rs);">
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:4px;">SYDNEY</div>
+          <div style="font-family:var(--fd);font-size:12px;" id="sess-syd">—</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--t3);margin-top:2px;">22–07 UTC</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--s3);border:1px solid var(--b0);border-radius:var(--rs);">
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:4px;">LONDON</div>
+          <div style="font-family:var(--fd);font-size:12px;" id="sess-lon">—</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--t3);margin-top:2px;">07–16 UTC</div>
+        </div>
+        <div style="text-align:center;padding:12px;background:var(--s3);border:1px solid var(--b0);border-radius:var(--rs);">
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:4px;">NEW YORK</div>
+          <div style="font-family:var(--fd);font-size:12px;" id="sess-ny">—</div>
+          <div style="font-family:var(--fm);font-size:8px;color:var(--t3);margin-top:2px;">13–22 UTC</div>
+        </div>
+      </div>
+      <div class="card-title" style="margin-bottom:10px;">⚖️ GOLD CORRELATION GUIDE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="padding:10px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:var(--rs);">
+          <div style="font-family:var(--fi);font-size:9px;font-weight:600;color:var(--em);letter-spacing:1px;margin-bottom:6px;">BULLISH GOLD</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);line-height:1.8;">DXY ↓ · Rate Cut · CPI ↓<br>NFP Miss · Risk-Off<br>Geopolitical Risk</div>
+        </div>
+        <div style="padding:10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:var(--rs);">
+          <div style="font-family:var(--fi);font-size:9px;font-weight:600;color:var(--cr);letter-spacing:1px;margin-bottom:6px;">BEARISH GOLD</div>
+          <div style="font-family:var(--fm);font-size:9px;color:var(--t3);line-height:1.8;">DXY ↑ · Rate Hike · CPI ↑<br>NFP Beat · Risk-On<br>Yield ↑</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 2 — MULTI-BROKER
+══════════════════════════════════════ -->
+<div class="pane" id="pane-brokers">
+  <div class="card" style="background:rgba(59,130,246,.04);border-color:rgba(59,130,246,.18);">
+    <div class="card-title">🔗 MULTI-BROKER AGGREGATOR <span class="ct-badge">MetaApi WebSocket Ready</span></div>
+    <div style="font-family:var(--fm);font-size:10px;color:var(--t3);line-height:1.7;">Masukkan MetaApi Token &amp; Account ID di <strong style="color:var(--t2)">Settings</strong> untuk koneksi live. Mode demonstrasi aktif.</div>
+  </div>
+  <div class="g4" style="margin-bottom:14px;">
+    <div class="stat"><div class="stat-lbl">Total Equity</div><div class="stat-val gold" id="agg-eq">$0.00</div></div>
+    <div class="stat"><div class="stat-lbl">Total Balance</div><div class="stat-val" id="agg-bal">$0.00</div></div>
+    <div class="stat"><div class="stat-lbl">Open P&L</div><div class="stat-val" id="agg-pl">$0.00</div></div>
+    <div class="stat"><div class="stat-lbl">Brokers Active</div><div class="stat-val b" id="agg-active">0/3</div></div>
+  </div>
+  <div class="g3" id="broker-grid">
+    <!-- Valetax -->
+    <div class="broker-card pending" id="bc-valetax">
+      <div class="broker-logo">VALETAX</div><div class="broker-name">Valetax Global</div>
+      <div class="broker-row"><span class="broker-key">Balance</span><span class="broker-val" id="vt-bal">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Equity</span><span class="broker-val pos" id="vt-eq">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Margin %</span><span class="broker-val" id="vt-mg">—</span></div>
+      <div class="broker-row"><span class="broker-key">Open Trades</span><span class="broker-val" id="vt-op">0</span></div>
+      <div class="broker-row"><span class="broker-key">Daily P&L</span><span class="broker-val" id="vt-pl">$0.00</span></div>
+      <span class="broker-status bs-wait" id="vt-status">⏳ STANDBY</span>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;justify-content:center;" onclick="connectBroker('valetax','vt')">⚡ CONNECT</button>
+    </div>
+    <!-- Exness -->
+    <div class="broker-card pending" id="bc-exness">
+      <div class="broker-logo">EXNESS</div><div class="broker-name">Exness Ltd</div>
+      <div class="broker-row"><span class="broker-key">Balance</span><span class="broker-val" id="ex-bal">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Equity</span><span class="broker-val pos" id="ex-eq">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Margin %</span><span class="broker-val" id="ex-mg">—</span></div>
+      <div class="broker-row"><span class="broker-key">Open Trades</span><span class="broker-val" id="ex-op">0</span></div>
+      <div class="broker-row"><span class="broker-key">Daily P&L</span><span class="broker-val" id="ex-pl">$0.00</span></div>
+      <span class="broker-status bs-wait" id="ex-status">⏳ STANDBY</span>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;justify-content:center;" onclick="connectBroker('exness','ex')">⚡ CONNECT</button>
+    </div>
+    <!-- HFM -->
+    <div class="broker-card pending" id="bc-hfm">
+      <div class="broker-logo">HFM</div><div class="broker-name">HF Markets (HFM)</div>
+      <div class="broker-row"><span class="broker-key">Balance</span><span class="broker-val" id="hm-bal">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Equity</span><span class="broker-val pos" id="hm-eq">$—</span></div>
+      <div class="broker-row"><span class="broker-key">Margin %</span><span class="broker-val" id="hm-mg">—</span></div>
+      <div class="broker-row"><span class="broker-key">Open Trades</span><span class="broker-val" id="hm-op">0</span></div>
+      <div class="broker-row"><span class="broker-key">Daily P&L</span><span class="broker-val" id="hm-pl">$0.00</span></div>
+      <span class="broker-status bs-wait" id="hm-status">⏳ STANDBY</span>
+      <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;justify-content:center;" onclick="connectBroker('hfm','hm')">⚡ CONNECT</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📡 METAAPI STREAM LOG</div>
+    <div id="ws-log-wrap" style="background:var(--s0);border:1px solid var(--b0);border-radius:var(--rs);padding:12px;height:160px;overflow-y:auto;font-family:var(--fm);font-size:10px;color:var(--t3);">
+      <div id="ws-log">⟳ Waiting for MetaApi connection…</div>
+    </div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="clearWsLog()">🗑 CLEAR</button>
+      <button class="btn btn-ghost btn-sm" onclick="simWsFeed()">⚡ SIMULATE FEED</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 3 — RISK ENGINE
+══════════════════════════════════════ -->
+<div class="pane" id="pane-risk">
+  <div class="g2">
+    <!-- Kelly Criterion -->
+    <div class="card">
+      <div class="card-title">🧮 DYNAMIC POSITION SIZING <span class="ct-badge">Kelly Criterion</span></div>
+      <div class="g2">
+        <div class="fg"><label class="fl">Modal (USD)</label><input class="fi" type="number" id="k-modal" value="1000" oninput="calcKelly()"></div>
+        <div class="fg"><label class="fl">Win Rate (%)</label><input class="fi" type="number" id="k-wr" value="60" step="1" min="1" max="99" oninput="calcKelly()"></div>
+        <div class="fg"><label class="fl">Avg Win (USD)</label><input class="fi" type="number" id="k-avgw" value="50" oninput="calcKelly()"></div>
+        <div class="fg"><label class="fl">Avg Loss (USD)</label><input class="fi" type="number" id="k-avgl" value="25" oninput="calcKelly()"></div>
+      </div>
+      <div class="fg"><label class="fl">Stop Loss (Pips) [50–200]</label>
+        <input class="fi" type="number" id="k-sl" value="70" min="10" max="300" oninput="calcKelly()">
+        <input type="range" id="k-sl-r" min="10" max="300" value="70" oninput="syncKSL()">
+      </div>
+      <div class="fg"><label class="fl">Max Risk Cap (%)</label>
+        <input type="range" id="k-cap" min="0.5" max="5" step="0.5" value="2" oninput="calcKelly()">
+        <div style="text-align:right;font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:3px;" id="k-cap-lbl">Cap: 2%</div>
+      </div>
+      <div class="kelly-box">
+        <div class="kelly-lbl">OPTIMAL LOT SIZE (KELLY + CAPPED)</div>
+        <div class="kelly-val" id="k-lot">0.070</div>
+        <div class="kelly-note" id="k-note">Kelly: 35% raw → capped 2% → 0.07 lot</div>
+        <div class="sep" style="margin:10px 0;opacity:.35;"></div>
+        <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:10px;">
+          <div><div class="kelly-lbl">MAX LOSS</div><div style="font-family:var(--fm);font-size:15px;color:var(--cr);" id="k-maxl">$20.00</div></div>
+          <div><div class="kelly-lbl">MAX LOSS IDR</div><div style="font-family:var(--fm);font-size:15px;color:var(--cy);" id="k-maxl-idr">Rp —</div></div>
+          <div><div class="kelly-lbl">KELLY RAW</div><div style="font-family:var(--fm);font-size:15px;color:var(--gold);" id="k-raw">35%</div></div>
+          <div><div class="kelly-lbl">RISK APPLIED</div><div style="font-family:var(--fm);font-size:15px;color:var(--em);" id="k-applied">2%</div></div>
+        </div>
+      </div>
+      <div id="k-warn" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--rs);font-family:var(--fm);font-size:10px;color:var(--cr);"></div>
+    </div>
+    <!-- ATR -->
+    <div class="card">
+      <div class="card-title">📊 ATR-BASED RISK MANAGER</div>
+      <div class="fg"><label class="fl">ATR Value (pips)</label><input class="fi" type="number" id="atr-val" value="85" oninput="calcATR()"></div>
+      <div class="fg"><label class="fl">ATR Multiplier (SL)</label>
+        <input type="range" id="atr-mult" min="0.5" max="3" step="0.5" value="1.5" oninput="calcATR()">
+        <div style="text-align:right;font-family:var(--fm);font-size:10px;color:var(--t2);margin-top:3px;" id="atr-mult-lbl">1.5x ATR</div>
+      </div>
+      <div class="fg"><label class="fl">Modal (USD)</label><input class="fi" type="number" id="atr-modal" value="1000" oninput="calcATR()"></div>
+      <div class="fg"><label class="fl">Risk per Trade (%)</label><input class="fi" type="number" id="atr-risk" value="1" step="0.1" oninput="calcATR()"></div>
+      <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.18);border-radius:var(--r);padding:14px;margin-top:8px;">
+        <div style="font-family:var(--fm);font-size:9px;color:var(--t3);letter-spacing:1.5px;margin-bottom:8px;">ATR OUTPUT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);">ATR SL (pips)</div><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--eb);" id="atr-sl-out">127</div></div>
+          <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);">Lot Size</div><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--em);" id="atr-lot-out">0.008</div></div>
+          <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);">Max Loss</div><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--cr);" id="atr-loss-out">$10.00</div></div>
+          <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);">Est. TP (2:1)</div><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--gold);" id="atr-tp-out">254 pips</div></div>
+        </div>
+      </div>
+      <div class="sep"></div>
+      <div class="card-title" style="margin-bottom:10px;">💱 PROFIT ESTIMATOR (IDR)</div>
+      <div class="g2">
+        <div class="fg"><label class="fl">Target Profit (USD)</label><input class="fi" type="number" id="prof-usd" value="100" oninput="calcProfIDR()"></div>
+        <div><label class="fl">Est. Rupiah</label><div style="font-family:var(--fm);font-size:18px;font-weight:700;color:var(--cy);padding:9px 0;" id="prof-idr">Rp —</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Compounding -->
+  <div class="card">
+    <div class="card-title">📈 COMPOUNDING PROYEKSI 30 HARI</div>
+    <div class="g3" style="margin-bottom:12px;">
+      <div class="fg"><label class="fl">Modal Awal (USD)</label><input class="fi" type="number" id="cp-m" value="1000" oninput="buildCompound()"></div>
+      <div class="fg"><label class="fl">Target Harian (%)</label><input class="fi" type="number" id="cp-r" value="5" step="0.5" min="1" max="20" oninput="buildCompound()"></div>
+      <div>
+        <label class="fl">Proyeksi Hari-30</label>
+        <div style="font-family:var(--fm);font-size:18px;font-weight:700;color:var(--em);padding:9px 0;" id="cp-fin">—</div>
+        <div style="font-family:var(--fm);font-size:11px;color:var(--cy);" id="cp-fin-idr">—</div>
+      </div>
+    </div>
+    <div style="max-height:260px;overflow-y:auto;scrollbar-width:thin;">
+      <table class="tbl"><thead><tr><th>HARI</th><th>MODAL</th><th>PROFIT/HARI</th><th>EST. IDR</th><th>TOTAL GAIN</th><th>GROWTH</th></tr></thead><tbody id="cp-body"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 4 — ORDER FLOW RADAR
+══════════════════════════════════════ -->
+<div class="pane" id="pane-radar">
+  <div class="card" style="background:rgba(16,185,129,.03);border-color:rgba(16,185,129,.15);">
+    <div class="card-title">🎯 INSTITUTIONAL LIQUIDITY &amp; ORDER FLOW RADAR <span class="ct-badge">SMC Advanced</span></div>
+    <div style="font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:12px;">Simulasi visual Order Block, Liquidity Pool, dan Fair Value Gap berbasis struktur pasar SMC.</div>
+    <div class="btn-row">
+      <button class="btn btn-success btn-sm" onclick="refreshRadar()">🔄 REFRESH RADAR</button>
+      <button class="btn btn-violet btn-sm" onclick="askAIOrderFlow()">🤖 AI ANALYZE FLOW</button>
+    </div>
+  </div>
+  <div class="radar-wrap">
+    <canvas id="radar-canvas" height="320"></canvas>
+    <div class="radar-legend">
+      <div class="rl-item"><div class="rl-dot" style="background:rgba(16,185,129,.7);"></div>Bullish OB</div>
+      <div class="rl-item"><div class="rl-dot" style="background:rgba(239,68,68,.7);"></div>Bearish OB</div>
+      <div class="rl-item"><div class="rl-dot" style="background:rgba(59,130,246,.7);"></div>Buy-Side Liq</div>
+      <div class="rl-item"><div class="rl-dot" style="background:rgba(139,92,246,.7);"></div>Sell-Side Liq</div>
+      <div class="rl-item"><div class="rl-dot" style="background:rgba(245,200,66,.5);"></div>FVG</div>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="card-title">🟩 ACTIVE ORDER BLOCKS</div><div id="ob-list"></div></div>
+    <div class="card"><div class="card-title">💧 LIQUIDITY POOLS</div><div id="liq-list"></div></div>
+    <div class="card"><div class="card-title">🔲 FAIR VALUE GAPS</div><div id="fvg-list"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 5 — AI CORE
+══════════════════════════════════════ -->
+<div class="pane" id="pane-aicore">
+  <!-- AI Status -->
+  <div class="card" style="background:rgba(139,92,246,.04);border-color:rgba(139,92,246,.18);">
+    <div class="card-title">🤖 AI CHIEF RISK OFFICER — STATUS <span class="ct-badge" id="ai-status-badge">OFFLINE</span></div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px;">PROVIDER</div><div style="font-family:var(--fd);font-size:13px;font-weight:700;color:var(--t1);" id="ai-provider-name">NOT CONFIGURED</div></div>
+      <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px;">MODEL</div><div style="font-family:var(--fm);font-size:12px;color:var(--t2);" id="ai-model-name">—</div></div>
+      <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px;">REQUESTS</div><div style="font-family:var(--fm);font-size:12px;color:var(--gold);" id="ai-req-count">0</div></div>
+      <div style="margin-left:auto;"><button class="btn btn-violet btn-sm" onclick="testAIConn()">🔬 TEST CONNECTION</button></div>
+    </div>
+  </div>
+  <!-- Black Swan -->
+  <div class="card" style="background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.15);">
+    <div class="card-title">⚫ AI BLACK SWAN ALERT SYSTEM <span class="ct-badge" id="swan-badge">MONITORING</span></div>
+    <div style="font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:12px;line-height:1.7;">AI memantau berita makroekonomi berdampak ekstrem yang dapat menciptakan volatilitas ≥200 pips pada XAUUSD.</div>
+    <div class="fg"><label class="fl">PASTE BREAKING NEWS / HEADLINE</label><textarea class="ft" id="swan-input" style="min-height:80px;" placeholder="Paste berita breaking news, pernyataan mendadak Fed, krisis geopolitik…"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="analyzeBlackSwan()">⚫ ANALYZE BLACK SWAN RISK</button>
+      <button class="btn btn-ghost btn-sm" onclick="setText('swan-input','')">✕</button>
+    </div>
+    <div class="ai-box" id="swan-result"><div class="ai-title" id="swan-title"></div><div class="ai-body" id="swan-body"></div></div>
+  </div>
+  <!-- News Decoder -->
+  <div class="card">
+    <div class="card-title">📰 AI FUNDAMENTAL DECODER</div>
+    <div class="fg"><label class="fl">PASTE BERITA / HEADLINE</label><textarea class="ft" id="news-in" style="min-height:80px;" placeholder="Fed signals dovish pivot, inflation data cools, gold surges…"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="analyzeNews()">🔬 DECODE WITH AI</button>
+      <button class="btn btn-ghost btn-sm" onclick="setText('news-in','')">✕</button>
+    </div>
+    <div class="ai-box" id="news-result"><div class="ai-title" id="news-title"></div><div class="ai-body" id="news-body"></div></div>
+  </div>
+  <!-- AI Auditor -->
+  <div class="card">
+    <div class="card-title">🔍 AI TRADING AUDITOR — POST-TRADE ANALYSIS</div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Pair</label><select class="fs" id="aud-pair"><option value="XAUUSD">XAUUSD</option><option value="EURUSD">EURUSD</option></select></div>
+      <div class="fg"><label class="fl">Direction</label><select class="fs" id="aud-dir"><option value="BUY">BUY</option><option value="SELL">SELL</option></select></div>
+      <div class="fg"><label class="fl">Entry Price</label><input class="fi" type="number" id="aud-entry" placeholder="2650.00" step="0.01"></div>
+      <div class="fg"><label class="fl">Exit Price</label><input class="fi" type="number" id="aud-exit" placeholder="2680.00" step="0.01"></div>
+      <div class="fg"><label class="fl">Result</label><select class="fs" id="aud-result"><option value="WIN">WIN</option><option value="LOSS">LOSS</option><option value="BE">BREAKEVEN</option></select></div>
+      <div class="fg"><label class="fl">PnL (USD)</label><input class="fi" type="number" id="aud-pnl" placeholder="0.00" step="0.01"></div>
+    </div>
+    <div class="fg"><label class="fl">Alasan Entry &amp; Kondisi Psikologi</label><textarea class="ft" id="aud-reason" placeholder="Jelaskan alasan entry, kondisi market, dan psikologi Anda saat trade ini…"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-violet" onclick="auditTrade()">🔍 AUDIT WITH AI</button>
+      <button class="btn btn-ghost btn-sm" onclick="autoFillAudit()">📋 DARI JURNAL TERAKHIR</button>
+    </div>
+    <div class="ai-box" id="audit-result"><div class="ai-title" id="audit-title"></div><div class="ai-body" id="audit-body"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 6 — JOURNAL
+══════════════════════════════════════ -->
+<div class="pane" id="pane-journal">
+  <div class="card">
+    <div class="card-title">✍️ NEW TRADE ENTRY</div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Datetime</label><input class="fi" type="datetime-local" id="j-dt"></div>
+      <div class="fg"><label class="fl">Pair</label><select class="fs" id="j-pair"><option value="XAUUSD">XAUUSD (Gold)</option><option value="EURUSD">EURUSD</option><option value="GBPUSD">GBPUSD</option></select></div>
+    </div>
+    <div class="g3">
+      <div class="fg"><label class="fl">Type</label><select class="fs" id="j-type"><option value="BUY">BUY 📈</option><option value="SELL">SELL 📉</option></select></div>
+      <div class="fg"><label class="fl">Entry Price</label><input class="fi" type="number" id="j-entry" placeholder="2650.00" step="0.01"></div>
+      <div class="fg"><label class="fl">Lot Size</label><input class="fi" type="number" id="j-lot" placeholder="0.10" step="0.01"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Stop Loss</label><input class="fi" type="number" id="j-sl" placeholder="2640.00" step="0.01"></div>
+      <div class="fg"><label class="fl">Take Profit</label><input class="fi" type="number" id="j-tp" placeholder="2680.00" step="0.01"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label class="fl">Strategy</label>
+        <select class="fs" id="j-reason">
+          <option value="SMC">SMC — Smart Money Concept</option>
+          <option value="OB">Order Block Entry</option>
+          <option value="Liquidity Grab">Liquidity Grab / Stop Hunt</option>
+          <option value="FVG">Fair Value Gap Fill</option>
+          <option value="News">Fundamental / News Play</option>
+          <option value="Breakout">Breakout Structure</option>
+          <option value="Scalping">Pure Scalp</option>
+          <option value="Overtrade">Overtrade / No Plan ⚠</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Status</label>
+        <select class="fs" id="j-status"><option value="OPEN">OPEN</option><option value="WIN">WIN ✅</option><option value="LOSS">LOSS ❌</option><option value="BE">BREAKEVEN</option></select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">P&amp;L (USD)</label>
+      <input class="fi" type="number" id="j-pnl" placeholder="0.00" step="0.01" oninput="showPnlIDR()">
+      <div id="j-pnl-idr"></div>
+    </div>
+    <div class="fg"><label class="fl">Psychology</label>
+      <div class="psych">
+        <button class="ptag" onclick="togPsy(this)">😊 Calm</button>
+        <button class="ptag" onclick="togPsy(this)">🎯 Focused</button>
+        <button class="ptag" onclick="togPsy(this)">💪 Confident</button>
+        <button class="ptag" onclick="togPsy(this)">😴 Tired</button>
+        <button class="ptag" data-risk onclick="togPsy(this)">😤 Greedy</button>
+        <button class="ptag" data-risk onclick="togPsy(this)">😨 Anxious</button>
+        <button class="ptag" data-risk onclick="togPsy(this)">😡 Revenge</button>
+        <button class="ptag" data-risk onclick="togPsy(this)">🔥 FOMO</button>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="ft" id="j-notes" placeholder="Market context, technical setup, key lesson…"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveJ()">💾 SAVE TRADE</button>
+      <button class="btn btn-violet" onclick="evalMentor()">🧠 AI MENTOR EVAL</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearJ()">✕ CLEAR</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 TRADE JOURNAL <span style="margin-left:auto;"><button class="btn btn-success btn-sm" onclick="exportCSV()">⬇ CSV</button></span></div>
+    <div class="tw">
+      <table class="tbl">
+        <thead><tr><th>DATETIME</th><th>PAIR</th><th>DIR</th><th>ENTRY</th><th>SL</th><th>TP</th><th>LOT</th><th>P&amp;L USD</th><th>P&amp;L IDR</th><th>STATUS</th><th>STRATEGY</th><th>PSYCH</th><th>R:R</th><th>ACT</th></tr></thead>
+        <tbody id="j-body"><tr><td colspan="14"><div class="no-data"><span class="nd-ico">📋</span>No trades yet.</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="g4" style="margin-top:14px;">
+    <div class="stat"><div class="stat-lbl">Total Trades</div><div class="stat-val" id="st-total">0</div></div>
+    <div class="stat"><div class="stat-lbl">Win Rate</div><div class="stat-val g" id="st-wr">0%</div></div>
+    <div class="stat"><div class="stat-lbl">Total P&L (USD)</div><div class="stat-val" id="st-pl">$0</div></div>
+    <div class="stat"><div class="stat-lbl">Avg R:R</div><div class="stat-val gold" id="st-rr">—</div></div>
+    <div class="stat"><div class="stat-lbl">Best Trade</div><div class="stat-val g" id="st-best">$0</div></div>
+    <div class="stat"><div class="stat-lbl">Worst Trade</div><div class="stat-val r" id="st-worst">$0</div></div>
+    <div class="stat"><div class="stat-lbl">Total P&L (IDR)</div><div class="stat-val b" id="st-pl-idr">Rp —</div></div>
+    <div class="stat"><div class="stat-lbl">Win / Loss</div><div class="stat-val" id="st-wl" style="font-size:14px;">—</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 7 — CALENDAR
+══════════════════════════════════════ -->
+<div class="pane" id="pane-calendar">
+  <div id="nev-banner" style="display:none;align-items:center;gap:12px;padding:10px 14px;margin-bottom:14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--rs);">
+    <div>
+      <div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:2px;">⚠ NEXT HIGH IMPACT EVENT</div>
+      <div style="font-family:var(--fd);font-size:11px;color:var(--cr);" id="nev-name">—</div>
+    </div>
+    <div style="font-family:var(--fm);font-size:16px;color:var(--gold);font-weight:700;margin-left:auto;" id="nev-cd">—</div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 LIVE ECONOMIC CALENDAR <span class="live-tag" style="margin-left:6px;">AUTO</span>
+      <span style="margin-left:auto;display:flex;gap:7px;">
+        <button class="btn btn-blue btn-sm" onclick="fetchCal()">🔄 REFRESH</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCalModal()">＋ MANUAL</button>
+      </span>
+    </div>
+    <div id="cal-con"><div style="text-align:center;padding:28px;font-family:var(--fm);font-size:11px;color:var(--t3);"><span style="display:inline-block;animation:rotSpin 1s linear infinite;margin-right:7px;">⟳</span>Loading…</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB 8 — SETTINGS
+══════════════════════════════════════ -->
+<div class="pane" id="pane-settings">
+  <div class="section-sep">AI API CONFIGURATION</div>
+  <div class="key-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="key-provider">🔷 Google Gemini</div>
+      <span class="key-status ks-off" id="gemini-status">INACTIVE</span>
+    </div>
+    <div class="key-desc">Google Gemini Pro/Flash — Free tier tersedia. API key dari aistudio.google.com</div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Gemini API Key</label>
+      <div class="pw-wrap"><input class="fi" type="password" id="gemini-key" placeholder="AIzaSy…" autocomplete="new-password"><button class="pw-eye" onclick="togglePwd('gemini-key',this)">👁</button></div>
+    </div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Model</label>
+      <select class="fs" id="gemini-model">
+        <option value="gemini-1.5-pro">gemini-1.5-pro (Best)</option>
+        <option value="gemini-1.5-flash">gemini-1.5-flash (Fast)</option>
+        <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (Latest)</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="saveAIKey('gemini')">💾 SAVE &amp; ACTIVATE</button>
+      <button class="btn btn-ghost btn-sm" onclick="testAIProvider('gemini')">🔬 TEST</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAIKey('gemini')" style="color:var(--cr);">🗑 CLEAR</button>
+    </div>
+  </div>
+  <div class="key-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="key-provider">🟠 Anthropic Claude</div>
+      <span class="key-status ks-off" id="claude-status">INACTIVE</span>
+    </div>
+    <div class="key-desc">Claude Sonnet/Haiku — Excellent reasoning. API key dari console.anthropic.com</div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Claude API Key</label>
+      <div class="pw-wrap"><input class="fi" type="password" id="claude-key" placeholder="sk-ant-…" autocomplete="new-password"><button class="pw-eye" onclick="togglePwd('claude-key',this)">👁</button></div>
+    </div>
+    <div class="fg" style="margin-bottom:8px;"><label class="fl">Model</label>
+      <select class="fs" id="claude-model">
+        <option value="claude-sonnet-4-5">claude-sonnet-4-5 (Recommended)</option>
+        <option value="claude-haiku-4-5">claude-haiku-4-5 (Fast)</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="saveAIKey('claude')">💾 SAVE &amp; ACTIVATE</button>
+      <button class="btn btn-ghost btn-sm" onclick="testAIProvider('claude')">🔬 TEST</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearAIKey('claude')" style="color:var(--cr);">🗑 CLEAR</button>
+    </div>
+  </div>
+  <div class="section-sep">BROKER &amp; KILL SWITCH CONFIG</div>
+  <div class="key-card">
+    <div class="key-provider" style="margin-bottom:4px;">📡 MetaApi &amp; Kill Switch</div>
+    <div class="g3">
+      <div class="fg"><label class="fl">MetaApi Token</label><div class="pw-wrap"><input class="fi" type="password" id="ma-token" placeholder="token…"><button class="pw-eye" onclick="togglePwd('ma-token',this)">👁</button></div></div>
+      <div class="fg"><label class="fl">Valetax Account ID</label><input class="fi" type="text" id="ma-vt" placeholder="account-id…"></div>
+      <div class="fg"><label class="fl">Exness Account ID</label><input class="fi" type="text" id="ma-ex" placeholder="account-id…"></div>
+      <div class="fg"><label class="fl">HFM Account ID</label><input class="fi" type="text" id="ma-hm" placeholder="account-id…"></div>
+      <div class="fg"><label class="fl">Override PIN (Kill Switch)</label><input class="fi" type="password" id="kill-pin-set" placeholder="4–8 digit"></div>
+      <div class="fg"><label class="fl">Lock Duration</label>
+        <select class="fs" id="kill-dur">
+          <option value="30">30 minutes</option><option value="60">1 hour</option>
+          <option value="120">2 hours</option><option value="240">4 hours</option>
+          <option value="480" selected>8 hours</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" onclick="saveAllSettings()">💾 SAVE ALL</button>
+      <button class="btn btn-danger btn-sm" onclick="testKillSwitch()">⛔ TEST KILL SWITCH</button>
+    </div>
+  </div>
+  <div class="section-sep">AI MODEL SELECTOR</div>
+  <div class="key-card">
+    <div class="key-provider" style="margin-bottom:4px;">🎛 Active AI Model Override</div>
+    <div class="key-desc">Pilih model preset atau ketik nama model kustom. Kosongkan "Custom" agar sistem pakai model dari provider aktif.</div>
+
+    <!-- Radio presets -->
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:11px;color:var(--t2);">
+        <input type="radio" name="ai-model" value="gemini-1.5-flash" checked
+          style="accent-color:var(--gold);width:14px;height:14px;">
+        gemini-1.5-flash <span style="color:var(--t3);font-size:9px;">(Fast, Free)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:11px;color:var(--t2);">
+        <input type="radio" name="ai-model" value="gemini-1.5-pro"
+          style="accent-color:var(--gold);width:14px;height:14px;">
+        gemini-1.5-pro <span style="color:var(--t3);font-size:9px;">(Best Gemini)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:11px;color:var(--t2);">
+        <input type="radio" name="ai-model" value="gemini-2.0-flash"
+          style="accent-color:var(--gold);width:14px;height:14px;">
+        gemini-2.0-flash <span style="color:var(--t3);font-size:9px;">(Latest Stable)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:11px;color:var(--t2);">
+        <input type="radio" name="ai-model" value="claude-haiku-4-5"
+          style="accent-color:var(--gold);width:14px;height:14px;">
+        claude-haiku-4-5 <span style="color:var(--t3);font-size:9px;">(Fast Claude)</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:var(--fm);font-size:11px;color:var(--t2);">
+        <input type="radio" name="ai-model" value="claude-sonnet-4-5"
+          style="accent-color:var(--gold);width:14px;height:14px;">
+        claude-sonnet-4-5 <span style="color:var(--t3);font-size:9px;">(Best Claude)</span>
+      </label>
+    </div>
+
+    <!-- Custom model override -->
+    <div class="fg" style="margin-bottom:6px;">
+      <label class="fl">Custom Model Name (override — kosongkan untuk pakai preset di atas)</label>
+      <input class="fi" type="text" id="cust-model"
+        placeholder="Contoh: gemini-1.5-pro  atau  claude-sonnet-4-5"
+        autocomplete="off">
+    </div>
+    <div style="font-family:var(--fm);font-size:9px;color:var(--t3);line-height:1.6;">
+      ℹ Prioritas: Custom Model → Radio Preset → Provider Default.<br>
+      Model dengan suffix <code style="color:var(--gold)">-exp</code> otomatis diganti ke
+      <code style="color:var(--gold)">gemini-1.5-pro</code> untuk menghindari error <em>Method Not Found</em>.
+    </div>
+  </div>
+
+  <div class="section-sep">DANGER ZONE</div>
+  <div class="card" style="border-color:rgba(239,68,68,.2);">
+    <div class="card-title" style="color:var(--cr);">⚠ DANGER ZONE</div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">🗑 CLEAR ALL JOURNAL DATA</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportAllData()">📦 EXPORT BACKUP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALENDAR MODAL ═══════════════════════════════════ -->
+<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(2,2,10,.9);z-index:500;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:22px;width:100%;max-width:440px;position:relative;">
+    <button onclick="closeCalModal()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;">✕</button>
+    <div class="card-title" style="margin-bottom:16px;">📅 ADD CALENDAR EVENT</div>
+    <div class="fg"><label class="fl">DateTime</label><input class="fi" type="datetime-local" id="m-dt"></div>
+    <div class="fg"><label class="fl">Event Name</label><input class="fi" type="text" id="m-name" placeholder="NFP, FOMC, CPI…"></div>
+    <div class="fg"><label class="fl">Impact</label><select class="fs" id="m-imp"><option value="High">🔴 HIGH</option><option value="Medium">🟡 MEDIUM</option><option value="Low">⚪ LOW</option></select></div>
+    <div class="fg"><label class="fl">Forecast</label><input class="fi" type="text" id="m-fore" placeholder="Prev: 150K | Forecast: 180K"></div>
+    <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="saveManual()">💾 SAVE</button><button class="btn btn-ghost btn-sm" onclick="closeCalModal()">CANCEL</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT — NULL-SAFE REBUILD
+══════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ══════════ CONSTANTS ══════════ */
+const C = {
+  GOLD_KEY : 'goldapi-213f2a770d1ec216db10eda6e6e490dc-io',
+  GOLD_URL : 'https://www.goldapi.io/api/XAU/USD',
+  FX_URL   : 'https://open.er-api.com/v6/latest/USD',
+  CAL_URL  : 'https://nfs.faireconomy.media/ff_calendar_thisweek.json',
+  REFRESH  : 60000,
+  J_KEY    : 'atc_j_v3',
+  SET_KEY  : 'atc_set_v3',
+  MC_KEY   : 'atc_cal_v2',
+  KILL_KEY : 'atc_kill_v1',
+  AI_KEY   : 'gemini-key'   /* maps to the gemini-key input in Settings */
+};
+
+/* ══════════ LIVE STATE ══════════ */
+const S = {
+  xau:0, xauPrev:0, xauChg:0, xauChgPct:0,
+  dxy:0, dxyPrev:0, idr:0, fx:{},
+  signal:'NEU', cal:[], lastFetch:null,
+  aiProvider:null, aiKey:null, aiModel:null, aiReqs:0,
+  killActive:false, killEnd:null,
+  brokers:{}
+};
+
+let CFG = {};
+
+/* ══════════════════════════════════════════════════════
+   NULL-SAFE DOM HELPERS — the root fix for all errors
+══════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id); // safe getter
+function setTxt(id, val) { const e=$(''+id); if(e) e.textContent = val; }
+function setHTML(id, val) { const e=$(''+id); if(e) e.innerHTML = val; }
+function setCls(id, val) { const e=$(''+id); if(e) e.className = val; }
+function setText(id, val) { const e=$(''+id); if(e) e.value = val; }
+function getVal(id, def=0) { const e=$(''+id); return e ? +e.value||def : def; }
+function getStr(id, def='') { const e=$(''+id); return e ? e.value||def : def; }
+
+/* ══════════ UTILS ══════════ */
+const f2 = v => (+v||0).toFixed(2);
+const f3 = v => (+v||0).toFixed(3);
+const f4 = v => (+v||0).toFixed(4);
+
+function fmtIDR(usd, rate) {
+  const r = rate || S.idr;
+  if (!r) return 'Rp —';
+  const v = (+usd||0) * r;
+  if (Math.abs(v) >= 1e9) return 'Rp ' + (v/1e9).toFixed(2) + ' M';
+  if (Math.abs(v) >= 1e6) return 'Rp ' + (v/1e6).toFixed(2) + ' Jt';
+  return 'Rp ' + Math.round(v).toLocaleString('id-ID');
+}
+function fmtUSD(v) {
+  const n = +v||0, c = n>=0 ? 'var(--em)' : 'var(--cr)';
+  return `<span style="color:${c}">${n>=0?'+':'-'}$${Math.abs(n).toFixed(2)}</span>`;
+}
+function toast(msg, ms=2800) {
+  const el = $('toast'); if(!el) return;
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+function togglePwd(id, btn) {
+  const el = $(id); if(!el) return;
+  const show = el.type==='text';
+  el.type = show ? 'password' : 'text';
+  if(btn) btn.textContent = show ? '👁' : '🙈';
+}
+
+/* ══════════ SETTINGS ══════════ */
+function loadSettings() {
+  try {
+    CFG = JSON.parse(localStorage.getItem(C.SET_KEY)||'{}');
+    if (CFG.geminiKey)   setText('gemini-key', CFG.geminiKey);
+    if (CFG.geminiModel) { const e=$('gemini-model'); if(e) e.value=CFG.geminiModel; }
+    if (CFG.claudeKey)   setText('claude-key', CFG.claudeKey);
+    if (CFG.claudeModel) { const e=$('claude-model'); if(e) e.value=CFG.claudeModel; }
+    if (CFG.maToken)  setText('ma-token', CFG.maToken);
+    if (CFG.maVT)     setText('ma-vt', CFG.maVT);
+    if (CFG.maEX)     setText('ma-ex', CFG.maEX);
+    if (CFG.maHM)     setText('ma-hm', CFG.maHM);
+    if (CFG.killPin)  setText('kill-pin-set', CFG.killPin);
+    if (CFG.killDur)  { const e=$('kill-dur'); if(e) e.value=CFG.killDur; }
+    if (CFG.activeProvider) {
+      S.aiProvider = CFG.activeProvider;
+      S.aiKey   = CFG.activeProvider==='gemini' ? CFG.geminiKey : CFG.claudeKey;
+      S.aiModel = CFG.activeProvider==='gemini' ? (CFG.geminiModel||'gemini-1.5-pro') : (CFG.claudeModel||'claude-sonnet-4-5');
+      refreshAIUI();
+    }
+  } catch(e) { console.warn('loadSettings:', e); }
+}
+
+function saveAllSettings() {
+  CFG.geminiKey   = getStr('gemini-key');
+  CFG.geminiModel = getStr('gemini-model','gemini-1.5-pro');
+  CFG.claudeKey   = getStr('claude-key');
+  CFG.claudeModel = getStr('claude-model','claude-sonnet-4-5');
+  CFG.maToken     = getStr('ma-token');
+  CFG.maVT        = getStr('ma-vt');
+  CFG.maEX        = getStr('ma-ex');
+  CFG.maHM        = getStr('ma-hm');
+  CFG.killPin     = getStr('kill-pin-set');
+  CFG.killDur     = getStr('kill-dur','480');
+  localStorage.setItem(C.SET_KEY, JSON.stringify(CFG));
+  toast('✅ All settings saved.');
+}
+
+/* ══════════ AI KEY MANAGEMENT ══════════ */
+function saveAIKey(provider) {
+  const key   = getStr(provider+'-key');
+  const model = getStr(provider+'-model', provider==='gemini'?'gemini-1.5-pro':'claude-sonnet-4-5');
+  if (!key) { toast('⚠ API Key kosong!'); return; }
+  if (provider==='gemini') { CFG.geminiKey=key; CFG.geminiModel=model; }
+  else                     { CFG.claudeKey=key; CFG.claudeModel=model; }
+  CFG.activeProvider = provider;
+  S.aiProvider=provider; S.aiKey=key; S.aiModel=model;
+  localStorage.setItem(C.SET_KEY, JSON.stringify(CFG));
+  refreshAIUI();
+  toast('✅ AI key saved & activated!');
+}
+
+function clearAIKey(provider) {
+  if (provider==='gemini') { CFG.geminiKey=''; setText('gemini-key',''); }
+  else                     { CFG.claudeKey=''; setText('claude-key',''); }
+  if (CFG.activeProvider===provider) {
+    CFG.activeProvider=null; S.aiProvider=null; S.aiKey=null;
+    refreshAIUI();
+  }
+  localStorage.setItem(C.SET_KEY, JSON.stringify(CFG));
+  toast('🗑 AI key cleared.');
+}
+
+function refreshAIUI() {
+  const has = !!(S.aiProvider && S.aiKey);
+  setCls('ai-badge', has ? 'nav-badge em' : 'nav-badge');
+  setTxt('ai-badge', has ? 'LIVE' : 'OFFLINE');
+  setTxt('ai-status-badge', has ? 'ONLINE' : 'OFFLINE');
+  setTxt('ai-provider-name', has ? (S.aiProvider==='gemini'?'🔷 GOOGLE GEMINI':'🟠 ANTHROPIC CLAUDE') : 'NOT CONFIGURED');
+  setTxt('ai-model-name', S.aiModel||'—');
+  setTxt('ai-req-count', S.aiReqs);
+  setCls('gemini-status', CFG.activeProvider==='gemini'?'key-status ks-on':'key-status ks-off');
+  setTxt('gemini-status', CFG.activeProvider==='gemini'?'ACTIVE':'INACTIVE');
+  setCls('claude-status', CFG.activeProvider==='claude'?'key-status ks-on':'key-status ks-off');
+  setTxt('claude-status', CFG.activeProvider==='claude'?'ACTIVE':'INACTIVE');
+}
+
+/* ══════════════════════════════════════════════════════
+   AI CALL — unified, model-safe, error-resilient
+   Supports: Gemini (primary) + Claude (fallback)
+   No "Method Not Found" errors — guards every code path
+══════════════════════════════════════════════════════ */
+async function askAI(promptText, sys='') {
+  /* ── 1. Resolve API Key ─────────────────────────── */
+  // Priority: active saved key → gemini-key input → claude-key input
+  let apiKey = S.aiKey || getStr('gemini-key') || getStr('claude-key');
+  if (!apiKey) {
+    toast('⚠ Masukkan API Key di Settings terlebih dahulu!');
+    return 'Silakan masukkan API Key Gemini atau Claude Anda di menu Settings untuk mengaktifkan AI.';
+  }
+
+  /* ── 2. Resolve Provider ────────────────────────── */
+  const provider = S.aiProvider ||
+    (getStr('gemini-key') ? 'gemini' : 'claude');
+
+  /* ── 3. Resolve Model (custom input → radio → saved → default) ── */
+  let model = (getStr('cust-model') || '').trim();
+  if (!model) {
+    const checked = document.querySelector('input[name="ai-model"]:checked');
+    model = checked ? checked.value : '';
+  }
+  if (!model) {
+    model = S.aiModel ||
+      (provider === 'gemini' ? 'gemini-1.5-flash' : 'claude-haiku-4-5');
+  }
+  // Strip unstable -exp suffix → stable equivalent
+  if (model.includes('-exp')) model = 'gemini-1.5-pro';
+
+  /* ── 4. Merge system prompt into user prompt (Gemini has no sys param) ── */
+  const fullPrompt = sys ? `${sys}\n\n${promptText}` : promptText;
+
+  S.aiReqs++;
+  setTxt('ai-req-count', S.aiReqs);
+
+  /* ── 5. Route to correct provider ─────────────────── */
+  try {
+    if (provider === 'gemini') {
+      return await _callGemini(fullPrompt, model, apiKey);
+    } else {
+      // Claude needs the raw prompt + sys separately
+      return await _callClaude(promptText, sys, model, apiKey);
+    }
+  } catch (err) {
+    console.error('[askAI FETCH FAILED]', err);
+    return `[KONEKSI GAGAL] Tidak dapat terhubung ke server AI: ${err.message}`;
+  }
+}
+
+async function _callGemini(fullPrompt, model, apiKey) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: fullPrompt }] }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 1024 }
+    })
+  });
+  const data = await response.json();
+  if (data.error) {
+    console.error('[Gemini API ERROR]', data.error);
+    return `[AI ERROR] ${data.error.status}: ${data.error.message}`;
+  }
+  if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    return data.candidates[0].content.parts[0].text;
+  }
+  return 'AI berhasil terhubung, namun tidak ada respons teks yang dikembalikan.';
+}
+
+async function _callClaude(prompt, sys, model, apiKey) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      system: sys || 'You are an expert institutional XAUUSD trader and risk manager.',
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) {
+    return `[Claude ERROR] ${data.error.type}: ${data.error.message}`;
+  }
+  return data.content?.[0]?.text || 'No response from Claude.';
+}
+
+/* Backward-compat alias — any legacy callAI() calls still work */
+const callAI = (prompt, sys='') => askAI(prompt, sys);
+
+function showAIPopup(title, content) {
+  setTxt('aiPopupTitle', title);
+  setHTML('aiPopupContent', content);
+  const e = $('aiPopupBg'); if(e) e.classList.add('open');
+}
+function closeAIPopup() { const e=$('aiPopupBg'); if(e) e.classList.remove('open'); }
+
+async function askAIMarket() {
+  const ctx = `XAU/USD: $${f2(S.xau)} (${S.xauChg>=0?'+':''}${f2(S.xauChgPct)}%) | DXY: ${f2(S.dxy)} | USD/IDR: ${Math.round(S.idr).toLocaleString('id-ID')} | Signal: ${S.signal}`;
+  showAIPopup('🧠 AI CRO MARKET ANALYSIS', '<div class="ai-thinking"><span class="spin">⟳</span>Analyzing market…</div>');
+  const sys = 'You are an elite XAUUSD institutional trader and Chief Risk Officer. Respond in Bahasa Indonesia. Give concise, actionable analysis with bullet points.';
+  const r = await askAI(`Analisis kondisi pasar XAUUSD dan berikan rekomendasi taktis:\n${ctx}`, sys);
+  setHTML('aiPopupContent', `<div class="ai-response">${r.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`);
+}
+
+async function testAIConn() {
+  showAIPopup('🔬 CONNECTION TEST', '<div class="ai-thinking"><span class="spin">⟳</span>Testing…</div>');
+  const r = await askAI('Balas singkat: "AI Trading Commander v3 terhubung dan siap. Provider aktif: [sebutkan nama provider Anda]."');
+  setHTML('aiPopupContent', `<div class="ai-response">${r.replace(/\n/g,'<br>')}</div>`);
+}
+
+async function testAIProvider(provider) {
+  const key = getStr(provider + '-key');
+  if (!key) { toast('⚠ Masukkan API Key terlebih dahulu!'); return; }
+  const model = getStr(provider + '-model') ||
+    (provider === 'gemini' ? 'gemini-1.5-flash' : 'claude-haiku-4-5');
+
+  showAIPopup(`🔬 TEST ${provider.toUpperCase()}`,
+    '<div class="ai-thinking"><span class="spin">⟳</span>Testing connection…</div>');
+
+  let result;
+  try {
+    if (provider === 'gemini') {
+      result = await _callGemini(
+        'Respond in one sentence: "Gemini connection successful. AI Trading Commander v3 is online."',
+        model, key
+      );
+    } else {
+      result = await _callClaude(
+        'Respond in one sentence: "Claude connection successful. AI Trading Commander v3 is online."',
+        '', model, key
+      );
+    }
+  } catch (e) {
+    result = `[GAGAL] ${e.message}`;
+  }
+  setHTML('aiPopupContent',
+    `<div class="ai-response">${result.replace(/\n/g, '<br>')}</div>`);
+}
+
+/* ══════════════════════════════════════════
+   LIVE MARKET DATA — fetch with null-safe updates
+══════════════════════════════════════════ */
+function setApiStatus(st) {
+  setCls('api-dot', 'api-dot '+st);
+  setTxt('api-txt', {live:'LIVE',loading:'LOADING',error:'ERROR'}[st]||st);
+}
+
+function calcDXY(r) {
+  try {
+    return 50.14348112
+      * Math.pow(1/r.EUR,-0.576)*Math.pow(r.JPY,0.136)*Math.pow(1/r.GBP,-0.119)
+      * Math.pow(r.CAD,0.091)*Math.pow(r.SEK,0.042)*Math.pow(r.CHF,0.036);
+  } catch { return null; }
+}
+
+async function fetchMarket() {
+  setApiStatus('loading');
+  try {
+    const [gr, fr] = await Promise.all([
+      fetch(C.GOLD_URL, { headers:{'x-access-token':C.GOLD_KEY,'Content-Type':'application/json'} }),
+      fetch(C.FX_URL)
+    ]);
+    if (!gr.ok) throw new Error('GoldAPI HTTP ' + gr.status);
+    if (!fr.ok) throw new Error('ExchangeRate HTTP ' + fr.status);
+    const [gd, fd] = await Promise.all([gr.json(), fr.json()]);
+
+    // Update state
+    S.xauPrev   = S.xau || gd.prev_close_price || gd.price;
+    S.xau       = gd.price;
+    S.xauChg    = gd.ch  ?? (S.xau - S.xauPrev);
+    S.xauChgPct = gd.chp ?? ((S.xauChg / S.xauPrev) * 100);
+    S.fx   = fd.rates || {};
+    S.idr  = S.fx.IDR  || 0;
+    const nd = calcDXY(S.fx);
+    S.dxyPrev = S.dxy || nd;
+    S.dxy     = nd;
+    S.lastFetch = new Date();
+    setApiStatus('live');
+
+    // Update UI — each wrapped safely
+    updateTickerUI();
+    updateSignalUI();
+    updateKPIUI();
+    updateHFTicker();
+    calcKelly();
+    calcATR();
+    calcProfIDR();
+    buildCompound();
+
+    setTxt('api-upd', 'Updated ' + S.lastFetch.toLocaleTimeString('id-ID') + ' · 60s');
+
+  } catch(e) {
+    console.warn('[fetchMarket]', e.message);
+    setApiStatus('error');
+    setTxt('api-upd', '⚠ ' + e.message.slice(0,40));
+  }
+}
+fetchMarket();
+setInterval(fetchMarket, C.REFRESH);
+
+function updateTickerUI() {
+  try {
+    setTxt('chip-xau', '$' + f2(S.xau));
+    const xUp = S.xauChg >= 0;
+    const xd = $('chip-xau-delta');
+    if (xd) { xd.textContent = (xUp?'+':'') + f2(S.xauChgPct) + '%'; xd.className='p-delta '+(xUp?'pd-up':'pd-dn'); }
+
+    if (S.dxy) {
+      const dc = S.dxy - (S.dxyPrev||S.dxy), dUp = dc>=0;
+      const dv = $('chip-dxy');
+      if (dv) { dv.textContent = f2(S.dxy); dv.className = 'p-val '+(dUp?'v-rup':'v-rdn'); }
+      const dd = $('chip-dxy-delta');
+      if (dd) { dd.textContent = (dc>=0?'+':'') + dc.toFixed(3); dd.className = 'p-delta '+(dUp?'pd-dn':'pd-up'); }
+    }
+    if (S.idr) {
+      setTxt('chip-idr', Math.round(S.idr).toLocaleString('id-ID'));
+    }
+  } catch(e) { console.warn('[updateTickerUI]', e); }
+}
+
+function updateSignalUI() {
+  try {
+    if (!S.xau || !S.dxy) return;
+    const goldUp = S.xauChg >= 0, dxyUp = S.dxy >= (S.dxyPrev||S.dxy);
+    let icon, main, sub, pCls, pTxt, cardBg, cardBdr;
+
+    if (dxyUp && !goldUp) {
+      icon='📉'; main='⚠ STRONG SELL SIGNAL FOR GOLD';
+      sub=`DXY ↑ ${f2(S.dxy)} menguat · XAU ↓ $${f2(S.xau)} · Cari rejection di Supply Zone`;
+      pCls='sig-pill pill-sell'; pTxt='▼ STRONG SELL'; S.signal='SELL';
+      cardBg='rgba(239,68,68,.05)'; cardBdr='rgba(239,68,68,.2)';
+    } else if (!dxyUp && goldUp) {
+      icon='📈'; main='✅ STRONG BUY SIGNAL FOR GOLD';
+      sub=`DXY ↓ ${f2(S.dxy)} melemah · XAU ↑ $${f2(S.xau)} · Cari entry di Demand Zone`;
+      pCls='sig-pill pill-buy'; pTxt='▲ STRONG BUY'; S.signal='BUY';
+      cardBg='rgba(16,185,129,.05)'; cardBdr='rgba(16,185,129,.2)';
+    } else {
+      icon='⚖️'; main='⚖ NEUTRAL — KONFLIK SINYAL';
+      sub=`DXY ${f2(S.dxy)} · XAU $${f2(S.xau)} · Tunggu konfirmasi teknikal`;
+      pCls='sig-pill pill-neu'; pTxt='⚖ NEUTRAL'; S.signal='NEU';
+      cardBg='rgba(245,200,66,.04)'; cardBdr='rgba(245,200,66,.15)';
+    }
+
+    const sc = $('sig-card');
+    if (sc) sc.style.cssText = `background:linear-gradient(135deg,${cardBg},transparent);border-color:${cardBdr};`;
+    setTxt('sig-icon', icon);
+    setTxt('sig-text', main);
+    setTxt('sig-sub',  sub);
+    const sp = $('chip-signal');
+    if (sp) { sp.className=pCls; sp.textContent=pTxt; }
+  } catch(e) { console.warn('[updateSignalUI]', e); }
+}
+
+function updateKPIUI() {
+  try {
+    if (S.xau) {
+      setTxt('kv-xau', '$'+f2(S.xau));
+      const xUp = S.xauChg>=0;
+      const chgEl = $('kv-xau-chg');
+      if (chgEl) { chgEl.textContent=(xUp?'▲':'▼')+' '+f2(Math.abs(S.xauChgPct))+'% today'; chgEl.style.color=xUp?'var(--em)':'var(--cr)'; }
+    }
+    if (S.dxy) {
+      setTxt('kv-dxy', f2(S.dxy));
+      const dUp = S.dxy>=(S.dxyPrev||S.dxy);
+      const dchEl = $('kv-dxy-chg');
+      if (dchEl) { dchEl.textContent=dUp?'↑ Strengthening':'↓ Weakening'; dchEl.style.color=dUp?'var(--cr)':'var(--em)'; }
+    }
+    if (S.idr) setTxt('kv-idr', Math.round(S.idr).toLocaleString('id-ID'));
+  } catch(e) { console.warn('[updateKPIUI]', e); }
+}
+
+function updateHFTicker() {
+  try {
+    const xUp = S.xauChg>=0;
+    const goldTxt = `$${f2(S.xau)} ${xUp?'▲':'▼'}${f2(Math.abs(S.xauChgPct))}%`;
+    setTxt('hf-gold', goldTxt);
+    setTxt('hf-gold2', goldTxt);
+    const dxyTxt = S.dxy ? f2(S.dxy) : '—';
+    setTxt('hf-dxy', dxyTxt); setTxt('hf-dxy2', dxyTxt);
+    const idrTxt = S.idr ? Math.round(S.idr).toLocaleString('id-ID') : '—';
+    setTxt('hf-idr', idrTxt); setTxt('hf-idr2', idrTxt);
+    const r10y = (4.2+Math.random()*.3).toFixed(2)+'%';
+    setTxt('hf-10y', r10y); setTxt('hf-10y2', r10y);
+    const u = new Date().getUTCHours()*60+new Date().getUTCMinutes();
+    const sess = u>=7*60&&u<16*60?'LONDON':u>=13*60&&u<22*60?'NEW YORK':u>=22*60||u<7*60?'SYDNEY':'OVERLAP';
+    setTxt('hf-sess', sess+' OPEN'); setTxt('hf-sess2', sess+' OPEN');
+  } catch(e) { console.warn('[updateHFTicker]', e); }
+}
+
+/* ══════════ CLOCK & SESSIONS ══════════ */
+function tick() {
+  try {
+    const n=new Date(), p=v=>String(v).padStart(2,'0');
+    setTxt('clock', `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())} WIB`);
+    const u=n.getUTCHours()*60+n.getUTCMinutes();
+    const act=(s,e)=>e>s?(u>=s&&u<e):(u>=s||u<e);
+    const sh=ok=>ok?`<span style="font-family:var(--fm);font-size:11px;color:var(--em)">● ACTIVE</span>`:`<span style="font-family:var(--fm);font-size:11px;color:var(--t3)">○ CLOSED</span>`;
+    setHTML('sess-syd', sh(act(22*60,7*60)));
+    setHTML('sess-lon', sh(act(7*60,16*60)));
+    setHTML('sess-ny',  sh(act(13*60,22*60)));
+    tickCountdown();
+    if (S.killActive) updateKillTimer();
+  } catch(e) { /* silent */ }
+}
+setInterval(tick, 1000); tick();
+
+function tickCountdown() {
+  const now = Date.now();
+  const up = S.cal.filter(e => {
+    const d = new Date(e.date||e.datetime);
+    return (e.impact==='High'||e.impact==='HIGH') && d>now;
+  }).sort((a,b)=>new Date(a.date||a.datetime)-new Date(b.date||b.datetime));
+  const banner = $('nev-banner');
+  if (!banner) return;
+  if (!up.length) { banner.style.display='none'; return; }
+  banner.style.display='flex';
+  const diff = new Date(up[0].date||up[0].datetime)-now;
+  const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),sec=Math.floor((diff%60000)/1000);
+  setTxt('nev-name', up[0].title||up[0].name||'—');
+  setTxt('nev-cd', `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`);
+}
+
+/* ══════════ TAB SWITCH ══════════ */
+function goTab(id, btn) {
+  document.querySelectorAll('.pane').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+  const pane = $('pane-'+id);
+  if (pane) pane.classList.add('active');
+  if (btn)  btn.classList.add('active');
+  if (id==='journal')   { renderJournal(); updateJStats(); }
+  if (id==='radar')     drawRadar();
+  if (id==='calendar')  fetchCal();
+  if (id==='overview')  updateJStats();
+}
+
+/* ══════════ DAILY DRAWDOWN ══════════ */
+function calcDD() {
+  try {
+    const modal = getVal('dd-modal',1000);
+    const loss  = getVal('dd-loss', 0);
+    const lim   = getVal('dd-limit',5);
+    setTxt('dd-limit-lbl', lim+'%');
+    const pct   = Math.min((loss/modal)*100, 100);
+    setTxt('dd-pct', pct.toFixed(1)+'%');
+    const fill   = $('dd-fill');
+    const badge  = $('dd-badge');
+    const vfx    = $('killOverlay'); // using kill overlay for VFX
+    if (fill) fill.style.width = Math.min(pct,100)+'%';
+    const rel = lim>0 ? (pct/lim)*100 : 0;
+    if (rel>=100) {
+      if(fill) fill.className='gauge-fill gf-kill';
+      if(badge){ badge.textContent='⛔ STOP'; badge.style.background='rgba(239,68,68,.2)'; badge.style.color='var(--cr)'; }
+      activateKillSwitch(`Daily loss limit ${lim}% tercapai ($${loss.toFixed(2)} dari $${modal.toLocaleString()})`);
+    } else if (rel>=70) {
+      if(fill) fill.className='gauge-fill gf-danger';
+      if(badge){ badge.textContent='🔴 DANGER'; badge.style.background='rgba(239,68,68,.15)'; badge.style.color='var(--cr)'; }
+    } else if (rel>=40) {
+      if(fill) fill.className='gauge-fill gf-warn';
+      if(badge){ badge.textContent='🟡 CAUTION'; badge.style.background='rgba(245,158,11,.15)'; badge.style.color='var(--am)'; }
+    } else {
+      if(fill) fill.className='gauge-fill gf-safe';
+      if(badge){ badge.textContent='✅ SAFE'; badge.style.background='rgba(16,185,129,.15)'; badge.style.color='var(--em)'; }
+    }
+  } catch(e) { console.warn('[calcDD]', e); }
+}
+
+/* ══════════ KILL SWITCH ══════════ */
+function activateKillSwitch(reason='Daily loss limit breached') {
+  const durMin = getVal('kill-dur', 480);
+  S.killActive = true;
+  S.killEnd    = Date.now() + durMin*60*1000;
+  localStorage.setItem(C.KILL_KEY, JSON.stringify({active:true, end:S.killEnd, reason}));
+  setTxt('killMsg', reason+' — Dashboard dikunci oleh sistem Anti-Overtrading.');
+  const ov = $('killOverlay'); if(ov) ov.classList.add('active');
+}
+
+function updateKillTimer() {
+  const rem = S.killEnd - Date.now();
+  if (rem <= 0) { deactivateKillSwitch(); return; }
+  const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
+  setTxt('killTimer', `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+}
+
+function deactivateKillSwitch() {
+  S.killActive=false; S.killEnd=null;
+  localStorage.removeItem(C.KILL_KEY);
+  const ov = $('killOverlay'); if(ov) ov.classList.remove('active');
+  toast('✅ Kill Switch deactivated.');
+}
+
+function tryUnlock() {
+  const pin    = getStr('killPinInput');
+  const saved  = CFG.killPin || '0000';
+  if (pin===saved) { deactivateKillSwitch(); }
+  else { toast('❌ Wrong PIN!'); setText('killPinInput',''); }
+}
+
+function testKillSwitch() { activateKillSwitch('TEST — Kill Switch berfungsi dengan baik'); }
+
+// Check on load
+(function checkKill() {
+  try {
+    const k = JSON.parse(localStorage.getItem(C.KILL_KEY)||'{}');
+    if (k.active && k.end > Date.now()) {
+      S.killActive=true; S.killEnd=k.end;
+      setTxt('killMsg', k.reason+' — Dashboard dikunci.');
+      const ov=$('killOverlay'); if(ov) ov.classList.add('active');
+    } else if (k.active) { localStorage.removeItem(C.KILL_KEY); }
+  } catch(e) {}
+})();
+
+/* ══════════ KELLY CRITERION ══════════ */
+function syncKSL() { const e=$('k-sl'); if(e) e.value=getVal('k-sl-r',70); calcKelly(); }
+
+function calcKelly() {
+  try {
+    const modal = getVal('k-modal',1000);
+    const wr    = getVal('k-wr',60)/100;
+    const avgW  = getVal('k-avgw',50);
+    const avgL  = getVal('k-avgl',25);
+    const sl    = getVal('k-sl',70);
+    const cap   = getVal('k-cap',2)/100;
+    setTxt('k-cap-lbl', 'Cap: '+(cap*100)+'%');
+    const b = avgW/Math.max(avgL,0.01);
+    const kellyRaw    = (wr*b - (1-wr))/b;
+    const kellyCapped = Math.max(0, Math.min(kellyRaw, cap));
+    const lot         = modal>0 ? (modal*kellyCapped)/(sl*10) : 0;
+    const maxL        = modal*kellyCapped;
+    const MIN_LOT     = 0.01;
+    setTxt('k-lot', lot>=MIN_LOT ? f3(lot) : (lot>0 ? '0.010 ⚠' : '0.000'));
+    setTxt('k-note', `Kelly: ${(kellyRaw*100).toFixed(1)}% raw → capped ${(kellyCapped*100).toFixed(1)}% → ${f3(lot)} lot`);
+    setTxt('k-maxl', '$'+f2(maxL));
+    setTxt('k-maxl-idr', fmtIDR(maxL));
+    setTxt('k-raw', (kellyRaw*100).toFixed(1)+'%');
+    setTxt('k-applied', (kellyCapped*100).toFixed(1)+'%');
+    const warn = $('k-warn');
+    if (warn) {
+      if (lot<MIN_LOT && lot>0 && modal>0) {
+        const minM = Math.ceil((MIN_LOT*sl*10)/kellyCapped);
+        warn.style.display='block';
+        warn.textContent = `⚠ Lot di bawah minimum akun standar (0.01). Modal minimum: $${minM.toLocaleString()}`;
+      } else { warn.style.display='none'; }
+    }
+  } catch(e) { console.warn('[calcKelly]', e); }
+}
+calcKelly();
+
+/* ══════════ ATR SIZER ══════════ */
+function calcATR() {
+  try {
+    const atr   = getVal('atr-val',85);
+    const mult  = getVal('atr-mult',1.5);
+    setTxt('atr-mult-lbl', mult+'x ATR');
+    const atrSL = Math.round(atr*mult);
+    const modal = getVal('atr-modal',1000);
+    const risk  = getVal('atr-risk',1)/100;
+    const lot   = modal>0 ? (modal*risk)/(atrSL*10) : 0;
+    const maxL  = modal*risk;
+    setTxt('atr-sl-out',   atrSL+' pips');
+    setTxt('atr-lot-out',  f3(lot));
+    setTxt('atr-loss-out', '$'+f2(maxL));
+    setTxt('atr-tp-out',   (atrSL*2)+' pips');
+  } catch(e) { console.warn('[calcATR]', e); }
+}
+calcATR();
+
+/* ══════════ PROFIT IDR ══════════ */
+function calcProfIDR() {
+  try { setTxt('prof-idr', fmtIDR(getVal('prof-usd',100))); }
+  catch(e) {}
+}
+calcProfIDR();
+
+/* ══════════ COMPOUNDING ══════════ */
+function buildCompound() {
+  try {
+    const modal = getVal('cp-m',1000);
+    const rate  = getVal('cp-r',5);
+    const tbody = $('cp-body'); if(!tbody) return;
+    tbody.innerHTML=''; let cur=modal;
+    for (let d=1; d<=30; d++) {
+      const daily=cur*rate/100, prev=cur; cur+=daily;
+      const gain=((cur-modal)/modal*100).toFixed(1);
+      const c = d<=10?'var(--t2)':d<=20?'var(--gold)':'var(--em)';
+      tbody.innerHTML+=`<tr>
+        <td style="color:var(--t3)">${d}</td>
+        <td style="color:${c};font-weight:600">$${prev.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td style="color:var(--em)">+$${daily.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td style="color:var(--cy);font-size:10px">${S.idr?fmtIDR(daily):'—'}</td>
+        <td style="color:var(--gold)">+${gain}%</td>
+        <td><div style="height:3px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:3px;"><div style="height:100%;border-radius:2px;background:linear-gradient(90deg,var(--gold),var(--em));width:${Math.min(+gain,300)/3}%"></div></div></td>
+      </tr>`;
+    }
+    setTxt('cp-fin', '$'+cur.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}));
+    setTxt('cp-fin-idr', S.idr ? '≈ '+fmtIDR(cur) : '');
+  } catch(e) { console.warn('[buildCompound]', e); }
+}
+buildCompound();
+
+/* ══════════ ORDER FLOW RADAR ══════════ */
+const OB=[], LIQ=[], FVG=[];
+
+function generateRadarData() {
+  OB.length=0; LIQ.length=0; FVG.length=0;
+  const base=S.xau||2650;
+  for(let i=0;i<4;i++) OB.push({price:base+(Math.random()-.5)*80,type:Math.random()>.5?'bull':'bear',str:0.4+Math.random()*.6,h:8+Math.random()*20});
+  for(let i=0;i<5;i++) LIQ.push({price:base+(Math.random()-.5)*100,type:Math.random()>.5?'buy':'sell',sz:0.3+Math.random()*.7});
+  for(let i=0;i<3;i++) FVG.push({hi:base+(Math.random()-.5)*60+5,lo:base+(Math.random()-.5)*60-5,filled:Math.random()>.6});
+}
+
+function drawRadar() {
+  try {
+    generateRadarData();
+    const canvas=$('radar-canvas'); if(!canvas) return;
+    const W=canvas.offsetWidth||600, H=320;
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    const base=S.xau||2650, range=200;
+    const p2y=p=>H-(((p-base+range/2)/range)*H);
+    const tW=W/80;
+    ctx.fillStyle='#0a0a18'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.lineWidth=1;
+    for(let i=0;i<H;i+=H/8){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(W,i);ctx.stroke();}
+    for(let i=0;i<W;i+=W/10){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,H);ctx.stroke();}
+    let price=base-30;
+    const bars=[];
+    for(let i=0;i<80;i++){const c=(Math.random()-.48)*3.5,o=price;price+=c;bars.push({o,c:price,h:Math.max(o,price)+Math.random()*4,l:Math.min(o,price)-Math.random()*4});}
+    bars.forEach((b,i)=>{
+      const x=i*tW+tW/2,up=b.c>=b.o,col=up?'rgba(16,185,129,.8)':'rgba(239,68,68,.8)';
+      ctx.strokeStyle=col;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,p2y(b.h));ctx.lineTo(x,p2y(b.l));ctx.stroke();
+      const bh=Math.abs(p2y(b.o)-p2y(b.c))||1;
+      ctx.fillStyle=col;ctx.fillRect(x-tW*.35,Math.min(p2y(b.o),p2y(b.c)),tW*.7,bh);
+    });
+    OB.forEach(ob=>{
+      const y=p2y(ob.price),col=ob.type==='bull'?'rgba(16,185,129,':'rgba(239,68,68,';
+      ctx.fillStyle=col+(ob.str*.18)+')';ctx.strokeStyle=col+(ob.str*.6)+')';ctx.lineWidth=1;
+      ctx.fillRect(0,y-ob.h/2,W,ob.h);ctx.strokeRect(0,y-ob.h/2,W,ob.h);
+      ctx.fillStyle=col+'0.9)';ctx.font='9px JetBrains Mono';
+      ctx.fillText((ob.type==='bull'?'▶ BULL OB ':'◀ BEAR OB ')+ob.price.toFixed(2),6,y+3);
+    });
+    LIQ.forEach(lq=>{
+      const y=p2y(lq.price),col=lq.type==='buy'?'rgba(59,130,246,':'rgba(139,92,246,';
+      ctx.setLineDash([4,3]);ctx.strokeStyle=col+(lq.sz*.7)+')';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=col+'0.85)';ctx.font='9px JetBrains Mono';
+      ctx.fillText((lq.type==='buy'?'💧 BUY LIQ ':'💧 SELL LIQ ')+lq.price.toFixed(2),6,y-3);
+    });
+    FVG.forEach(fvg=>{
+      const yH=p2y(fvg.hi),yL=p2y(fvg.lo);
+      ctx.fillStyle=fvg.filled?'rgba(100,116,139,.06)':'rgba(245,200,66,.07)';
+      ctx.strokeStyle=fvg.filled?'rgba(100,116,139,.2)':'rgba(245,200,66,.35)';ctx.lineWidth=1;
+      ctx.fillRect(W*.6,yH,W*.4,yL-yH);ctx.strokeRect(W*.6,yH,W*.4,yL-yH);
+      ctx.fillStyle='rgba(245,200,66,.8)';ctx.font='8px JetBrains Mono';
+      ctx.fillText(fvg.filled?'FVG (filled)':'FVG (open)',W*.62,yH+9);
+    });
+    const cy=p2y(bars[bars.length-1]?.c||base);
+    ctx.strokeStyle='rgba(245,200,66,.8)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(W,cy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(245,200,66,.9)';ctx.font='bold 10px JetBrains Mono';
+    ctx.fillText('$'+(bars[bars.length-1]?.c||base).toFixed(2),W-80,cy-4);
+    renderRadarLists();
+  } catch(e) { console.warn('[drawRadar]', e); }
+}
+
+function renderRadarLists() {
+  const obL=$('ob-list'), liqL=$('liq-list'), fvgL=$('fvg-list');
+  if(obL) obL.innerHTML=OB.map(ob=>`<div style="padding:8px 10px;background:rgba(${ob.type==='bull'?'16,185,129':'239,68,68'},.06);border:1px solid rgba(${ob.type==='bull'?'16,185,129':'239,68,68'},.2);border-radius:var(--rs);margin-bottom:6px;">
+    <div style="font-family:var(--fm);font-size:9px;color:${ob.type==='bull'?'var(--em)':'var(--cr)'};">${ob.type.toUpperCase()} ORDER BLOCK · Str ${(ob.str*100).toFixed(0)}%</div>
+    <div style="font-family:var(--fm);font-size:11px;color:var(--t1);">$${ob.price.toFixed(2)}</div></div>`).join('');
+  if(liqL) liqL.innerHTML=LIQ.map(lq=>`<div style="padding:8px 10px;background:rgba(${lq.type==='buy'?'59,130,246':'139,92,246'},.06);border:1px solid rgba(${lq.type==='buy'?'59,130,246':'139,92,246'},.2);border-radius:var(--rs);margin-bottom:6px;">
+    <div style="font-family:var(--fm);font-size:9px;color:${lq.type==='buy'?'var(--eb)':'var(--vi)'};">${lq.type.toUpperCase()}-SIDE LIQUIDITY</div>
+    <div style="font-family:var(--fm);font-size:11px;color:var(--t1);">$${lq.price.toFixed(2)}</div></div>`).join('');
+  if(fvgL) fvgL.innerHTML=FVG.map(fvg=>`<div style="padding:8px 10px;background:rgba(245,200,66,${fvg.filled?.03:.06});border:1px solid rgba(245,200,66,${fvg.filled?.1:.25});border-radius:var(--rs);margin-bottom:6px;">
+    <div style="font-family:var(--fm);font-size:9px;color:var(--gold);">FVG ${fvg.filled?'(FILLED)':'(OPEN)'}</div>
+    <div style="font-family:var(--fm);font-size:11px;color:var(--t1);">$${fvg.lo.toFixed(2)} — $${fvg.hi.toFixed(2)}</div></div>`).join('');
+}
+
+function refreshRadar() { drawRadar(); }
+async function askAIOrderFlow() {
+  showAIPopup('🎯 AI ORDER FLOW ANALYSIS', '<div class="ai-thinking"><span class="spin">⟳</span>Analyzing…</div>');
+  const sys='You are an SMC expert. Analyze XAUUSD order flow. Respond in Bahasa Indonesia with specific price levels.';
+  const r=await askAI(`Analisis Order Flow SMC XAUUSD di harga $${f2(S.xau)}. Sebutkan: OB terdekat, Liquidity Pool yang diincar, dan bias direktional.`, sys);
+  setHTML('aiPopupContent', `<div class="ai-response">${r.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`);
+}
+
+/* ══════════ MULTI-BROKER ══════════ */
+function wsLog(type, msg) {
+  const el = $('ws-log'); if(!el) return;
+  const colors={info:'var(--t3)',success:'var(--em)',data:'var(--eb)',error:'var(--cr)'};
+  const time = new Date().toLocaleTimeString('id-ID');
+  el.innerHTML += `<div style="color:${colors[type]||colors.info};margin-bottom:2px;">[${time}] ${msg}</div>`;
+  const wrap = $('ws-log-wrap'); if(wrap) wrap.scrollTop=wrap.scrollHeight;
+}
+function clearWsLog() { setHTML('ws-log', '⟳ Log cleared.'); }
+
+function connectBroker(brokerId, prefix) {
+  const token = CFG.maToken || getStr('ma-token');
+  const accId = CFG['ma'+prefix.toUpperCase()] || getStr('ma-'+prefix);
+  if (!token) { toast('⚠ Masukkan MetaApi Token di Settings!'); return; }
+  if (!accId) { toast('⚠ Masukkan Account ID untuk '+brokerId.toUpperCase()+' di Settings!'); return; }
+  setCls('bc-'+brokerId, 'broker-card pending');
+  setHTML(prefix+'-status', '⏳ CONNECTING');
+  wsLog('info', `[${brokerId.toUpperCase()}] Initiating MetaApi WebSocket (acc: ${accId.slice(0,8)}…)`);
+  setTimeout(() => {
+    wsLog('info', `[${brokerId.toUpperCase()}] Handshake…`);
+    setTimeout(() => {
+      wsLog('success', `[${brokerId.toUpperCase()}] Connected! Streaming…`);
+      simBrokerData(brokerId, prefix);
+    }, 1200);
+  }, 700);
+}
+
+function simBrokerData(brokerId, prefix) {
+  setCls('bc-'+brokerId, 'broker-card connected');
+  const stEl = $(prefix+'-status');
+  if (stEl) { stEl.textContent='● LIVE'; stEl.className='broker-status bs-live'; }
+  const bal=(1000+Math.random()*9000).toFixed(2);
+  const eq=(+bal+(Math.random()-.48)*200).toFixed(2);
+  const mg=(Math.random()*900+100).toFixed(0);
+  const op=Math.floor(Math.random()*3);
+  const pl=(+eq-+bal).toFixed(2);
+  setTxt(prefix+'-bal', '$'+parseFloat(bal).toLocaleString('en',{minimumFractionDigits:2}));
+  setTxt(prefix+'-eq', '$'+parseFloat(eq).toLocaleString('en',{minimumFractionDigits:2}));
+  const eqEl=$(prefix+'-eq'); if(eqEl) eqEl.className='broker-val '+(+eq>=+bal?'pos':'neg');
+  setTxt(prefix+'-mg', mg+'%');
+  setTxt(prefix+'-op', op);
+  setTxt(prefix+'-pl', (+pl>=0?'+':'')+'$'+Math.abs(+pl).toFixed(2));
+  const plEl=$(prefix+'-pl'); if(plEl) plEl.className='broker-val '+(+pl>=0?'pos':'neg');
+  wsLog('data', `[${brokerId.toUpperCase()}] Bal:$${bal} | Eq:$${eq} | Margin:${mg}% | Open:${op}`);
+  S.brokers[brokerId] = {connected:true, bal:+bal, eq:+eq, pl:+pl};
+  updateAggregates();
+  setInterval(() => {
+    const micro=(Math.random()-.5)*5;
+    wsLog('data', `[${brokerId.toUpperCase()}] ⟳ Equity: $${(parseFloat(eq)+micro).toFixed(2)}`);
+  }, 8000);
+}
+
+function updateAggregates() {
+  let totBal=0, totEq=0, totPL=0, active=0;
+  Object.values(S.brokers).forEach(b=>{ if(b.connected){ totBal+=b.bal||0; totEq+=b.eq||0; totPL+=b.pl||0; active++; }});
+  setTxt('agg-bal', '$'+totBal.toFixed(2));
+  setTxt('agg-eq',  '$'+totEq.toFixed(2));
+  setHTML('agg-pl', fmtUSD(totPL));
+  setTxt('agg-active', active+'/3');
+}
+
+function simWsFeed() {
+  ['[SYSTEM] MetaApi v3 connected','[STREAM] Heartbeat OK','[XAUUSD] Bid:2650.12 Ask:2650.18 Spread:0.06','[RISK] Margin monitoring active']
+    .forEach((m,i)=>setTimeout(()=>wsLog('data',m),i*600));
+}
+
+/* ══════════ BLACK SWAN ══════════ */
+const SWAN_WORDS=['war','military','attack','invasion','nuclear','default','bankruptcy','collapse','crash','emergency','black swan','extreme','crisis','recession','panic','surprise','unexpected','disaster','earthquake','pandemic'];
+
+async function analyzeBlackSwan() {
+  const txt = getStr('swan-input');
+  if (!txt) { toast('⚠ Paste berita terlebih dahulu!'); return; }
+  const lower = txt.toLowerCase();
+  const score = SWAN_WORDS.filter(t=>lower.includes(t)).length;
+  const isBS  = score >= 2;
+  const banner = $('swanBanner'); if(banner) banner.classList[isBS?'add':'remove']('active');
+  const swanBadge=$('swan-badge'); if(swanBadge) swanBadge.textContent=isBS?'⚫ ALERT':'MONITORING';
+  const res=$('swan-result'); if(res){ res.className='ai-box active '+(isBS?'bear':'neutral'); }
+  setTxt('swan-title', isBS ? '⚫ BLACK SWAN RISK DETECTED — HIGH VOLATILITY IMMINENT' : '✅ NO BLACK SWAN — NORMAL VOLATILITY');
+  let body = isBS
+    ? `⚠ Skor Black Swan: ${score} — Berita ini menunjukkan pola volatilitas ekstrem untuk XAUUSD.<br><br><strong>TINDAKAN SEGERA:</strong><br>• Tutup/kurangi semua posisi terbuka<br>• Perlebar Stop Loss jika masih dalam posisi<br>• JANGAN buka posisi baru<br>• Pertimbangkan aktifkan Kill Switch`
+    : `Skor Black Swan: ${score}/threshold 2. Tidak ada pola risiko ekstrem terdeteksi. Pertahankan manajemen risiko standar.`;
+  setHTML('swan-body', body + (S.aiKey ? '<br><br><span id="swan-ai-ext">Memuat analisis AI…</span>' : ''));
+  if (S.aiKey && isBS) {
+    const sys='You are a crisis-level risk manager. Analyze Black Swan risk for XAUUSD. Bahasa Indonesia. Be concise with specific protective actions.';
+    const r = await askAI(`Analisis risiko Black Swan berikut terhadap XAUUSD:\n"${txt}"`, sys);
+    setHTML('swan-ai-ext', `<br><strong style="color:var(--vi)">🤖 AI EMERGENCY ASSESSMENT:</strong><br>${r.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>')}`);
+  }
+}
+
+/* ══════════ AI NEWS DECODER ══════════ */
+const BKW=['rate cut','dovish','lower rates','cpi fell','cpi lower','inflation slows','weak dollar','dollar falls','dxy down','usd weakens','geopolitical','conflict','war','recession','safe haven','gold rally','gold surges','nfp miss','fed pause','fed pivot','qe','risk off','yields fall','flight to safety','powell dovish'];
+const SKW=['rate hike','hawkish','higher rates','cpi rose','cpi higher','strong dollar','dollar rallies','dxy up','usd strengthens','risk on','stocks rally','nfp beat','fed aggressive','tightening','qt','gold falls','dollar surge','yields rise','strong growth','gdp beat','powell hawkish'];
+
+async function analyzeNews() {
+  const txt = getStr('news-in');
+  if (!txt) { toast('⚠ Paste berita!'); return; }
+  const lower=txt.toLowerCase();
+  let bS=0,sS=0,bM=[],sM=[];
+  BKW.forEach(k=>{if(lower.includes(k)){bS++;bM.push(k);}});
+  SKW.forEach(k=>{if(lower.includes(k)){sS++;sM.push(k);}});
+  const dir=bS>sS?'bull':sS>bS?'bear':'neutral';
+  const res=$('news-result'); if(res) res.className='ai-box active '+dir;
+  setTxt('news-title', dir==='bull'?'📈 BULLISH GOLD · BEARISH DXY':dir==='bear'?'📉 BEARISH GOLD · BULLISH DXY':'⚖ NEUTRAL — KONFLIK SINYAL');
+  const titleEl=$('news-title');
+  if(titleEl) titleEl.style.color=dir==='bull'?'var(--em)':dir==='bear'?'var(--cr)':'var(--gold)';
+  let bodyTxt=`Score Bull: ${bS} · Bear: ${sS}<br><br>`;
+  if(dir==='bull')    bodyTxt+=`<strong>Bias: BUY XAUUSD</strong> — Cari Entry di Demand Zone. Konfirmasi M15.`;
+  else if(dir==='bear') bodyTxt+=`<strong>Bias: SELL XAUUSD</strong> — Cari Rejection di Supply Zone. Konfirmasi M15.`;
+  else bodyTxt+=`<strong>WAIT &amp; SEE</strong> — Tunggu konfirmasi teknikal lebih lanjut.`;
+  bodyTxt += S.aiKey ? '<br><br><span id="news-ai-ext">Memuat AI…</span>' : '';
+  setHTML('news-body', bodyTxt);
+  if (S.aiKey) {
+    const sys='Expert XAUUSD trader. Analyze news impact on XAUUSD/DXY. Bahasa Indonesia. 3-4 sentences.';
+    const r=await askAI(`Analisis dampak berita ini terhadap XAUUSD:\n"${txt}"`,sys);
+    setHTML('news-ai-ext', `<br><strong style="color:var(--vi)">🤖 AI INSIGHT:</strong> ${r.replace(/\n/g,' ')}`);
+  }
+}
+
+/* ══════════ AI TRADE AUDITOR ══════════ */
+async function auditTrade() {
+  const reason = getStr('aud-reason');
+  if (!reason) { toast('⚠ Jelaskan alasan trade!'); return; }
+  const res=$('audit-result'); if(res) res.className='ai-box active info';
+  setTxt('audit-title', '🔍 AI AUDITOR — ANALYZING…');
+  setHTML('audit-body', '<div class="ai-thinking"><span class="spin">⟳</span>AI sedang mengaudit…</div>');
+  const prompt=`Audit trade ini:\n${getStr('aud-pair')} ${getStr('aud-dir')}\nEntry:${getStr('aud-entry')} Exit:${getStr('aud-exit')}\nResult:${getStr('aud-result')} PnL:$${getStr('aud-pnl')}\nAlasan:${reason}`;
+  const sys='Strict institutional trading auditor. Audit objectively against institutional rules. Direct and specific. Bahasa Indonesia. Mark emotional trades clearly.';
+  const r=await askAI(prompt,sys);
+  const isEmotional=/emosi|revenge|greedy|fomo|impulsif|salah/i.test(r);
+  if(res) res.className='ai-box active '+(isEmotional?'bear':getStr('aud-result')==='WIN'?'bull':'info');
+  setTxt('audit-title', isEmotional?'⚠ INSTITUTIONAL VIOLATION DETECTED':'✅ TRADE AUDIT COMPLETE');
+  setHTML('audit-body', r.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>'));
+}
+
+function autoFillAudit() {
+  const d=getJ().slice(0,1);
+  if(!d.length){toast('⚠ Belum ada trade di jurnal.');return;}
+  const r=d[0];
+  const ps=$('aud-pair');if(ps)ps.value=r.pair||'XAUUSD';
+  const ds=$('aud-dir');if(ds)ds.value=r.type||'BUY';
+  setText('aud-entry', r.entry||'');
+  const rs=$('aud-result');if(rs)rs.value=r.status||'OPEN';
+  setText('aud-pnl', r.pnl||'0');
+  setText('aud-reason', `Strategy: ${r.reason}. Psychology: ${r.psych}. ${r.notes}`);
+  toast('✅ Data jurnal terakhir dimuat.');
+}
+
+/* ══════════ MENTOR ══════════ */
+const MENTOR_DB = {
+  revenge_loss:  {cls:'',emoji:'💀',title:'PERINGATAN KERAS, JENDERAL!',rule:'⛔ MATIKAN KOMPUTER! 24 JAM JAUH DARI CHART! DISIPLIN ADALAH HARGA MATI!',msg:`Anda <strong>KALAH karena REVENGE TRADING</strong> — emosi balas dendam. Ini racun paling mematikan untuk akun trading. Setiap revenge trade = modal Anda diberikan ke Market Maker.`},
+  greedy_loss:   {cls:'',emoji:'🐷',title:'PERINGATAN — GREEDY DETECTED!',rule:'🛑 STOP TRADING HARI INI! Review jurnal dan perbaiki exit rule!',msg:`Anda <strong>KALAH karena KESERAKAHAN</strong>. Tidak menutup profit tepat waktu atau menambah posisi tanpa rencana.`},
+  fomo_loss:     {cls:'',emoji:'🎰',title:'JENDERAL — ANDA BARU SAJA BERJUDI!',rule:'⛔ ISTIRAHAT 2 JAM! Baca ulang Trading Plan!',msg:`<strong>LOSS karena FOMO</strong>. Anda tidak trading berdasarkan sistem — hanya takut ketinggalan momentum.`},
+  overtrade_loss:{cls:'',emoji:'⚠️',title:'OVERTRADE / NO SL DETECTED!',rule:'⛔ HARGA MATI: SETIAP TRADE WAJIB PASANG STOP LOSS!',msg:`<strong>LOSS karena Overtrade atau tanpa Stop Loss</strong>. Trading tanpa SL bukan trading — itu spekulasi buta.`},
+  greedy_win:    {cls:'caution',emoji:'⚡',title:'HATI-HATI — JANGAN OVERCONFIDENT!',rule:'⚠ AMANKAN PROFIT! JANGAN ENTRY LAGI HARI INI!',msg:`Profit, tapi kondisi <strong>GREEDY berbahaya</strong>. Keberuntungan tidak bertahan selamanya.`},
+  disiplin_win:  {cls:'good',emoji:'🏆',title:'OUTSTANDING — TRADE DISIPLIN PENUH!',rule:'✅ PERTAHANKAN DISIPLIN! KONSISTENSI ADALAH KUNCI!',msg:`<strong>PROFIT dengan DISIPLIN PENUH</strong>: psikologi tenang/fokus, alasan entry valid, eksekusi sempurna. Standar institutional sejati.`},
+  neutral:       {cls:'caution',emoji:'📊',title:'EVALUASI AI MENTOR',rule:'💡 Konsistensi dalam proses adalah fondasi profitabilitas jangka panjang.',msg:`Tidak ada flag kritis terdeteksi. Pastikan: SL sebelum entry, RR min 1:1.5, entry hanya saat setup valid.`}
+};
+
+function evalMentor() {
+  const status = getStr('j-status');
+  const reason = getStr('j-reason');
+  const pnl    = getVal('j-pnl');
+  const psychTxt = Array.from(document.querySelectorAll('.ptag.on')).map(el=>el.textContent.trim().toLowerCase());
+  const isLoss=status==='LOSS'||pnl<0, isWin=status==='WIN'||pnl>0;
+  const hasRevenge=psychTxt.some(p=>p.includes('revenge'));
+  const hasGreedy=psychTxt.some(p=>p.includes('greedy'));
+  const hasFOMO=psychTxt.some(p=>p.includes('fomo'));
+  const hasTenang=psychTxt.some(p=>p.includes('calm')||p.includes('focused'));
+  const isOT=reason==='Overtrade';
+  let key='neutral';
+  if(isLoss){ if(hasRevenge)key='revenge_loss';else if(hasFOMO)key='fomo_loss';else if(isOT)key='overtrade_loss';else if(hasGreedy)key='greedy_loss'; }
+  else if(isWin){ if(hasGreedy)key='greedy_win';else if(hasTenang&&!hasRevenge&&!hasFOMO)key='disiplin_win'; }
+  showMentor(key);
+}
+
+function showMentor(key) {
+  const d=MENTOR_DB[key]||MENTOR_DB.neutral;
+  const mb=$('mentorBox'); if(!mb) return;
+  mb.className='mentor-box'+(d.cls?' '+d.cls:'');
+  setTxt('mentorEmoji', d.emoji);
+  setTxt('mentorTitle', d.title);
+  setHTML('mentorMsg',  d.msg);
+  setTxt('mentorRule',  d.rule);
+  const bg=$('mentorBg'); if(bg) bg.classList.add('open');
+}
+function closeMentor() { const e=$('mentorBg'); if(e) e.classList.remove('open'); }
+
+/* ══════════ JOURNAL ══════════ */
+const getJ   = () => JSON.parse(localStorage.getItem(C.J_KEY)||'[]');
+const saveJ2 = d => localStorage.setItem(C.J_KEY, JSON.stringify(d));
+let selPsy = [];
+
+function togPsy(el) {
+  el.classList.toggle('on');
+  const lb=el.textContent.trim();
+  selPsy=el.classList.contains('on')?[...selPsy,lb]:selPsy.filter(p=>p!==lb);
+}
+
+function initJDT() {
+  const n=new Date();
+  const el=$('j-dt'); if(el) el.value=new Date(n-n.getTimezoneOffset()*60000).toISOString().slice(0,16);
+}
+initJDT();
+
+function showPnlIDR() {
+  const v=getVal('j-pnl');
+  setHTML('j-pnl-idr', v!==0 ? `<span class="idr-tag">≈ ${fmtIDR(v)}</span>` : '');
+}
+
+function saveJ() {
+  const entry=getStr('j-entry');
+  if(!entry){toast('⚠ Enter price required!');return;}
+  const rec={id:Date.now(),datetime:getStr('j-dt'),pair:getStr('j-pair','XAUUSD'),
+    type:getStr('j-type','BUY'),entry,sl:getStr('j-sl'),tp:getStr('j-tp'),lot:getStr('j-lot'),
+    pnl:getStr('j-pnl','0'),status:getStr('j-status','OPEN'),reason:getStr('j-reason','SMC'),
+    psych:selPsy.join(', '),notes:getStr('j-notes'),idrRate:S.idr||0};
+  const d=getJ();d.unshift(rec);saveJ2(d);
+  clearJ();renderJournal();updateJStats();
+  toast('✅ Trade saved!');
+}
+
+function clearJ() {
+  ['j-entry','j-sl','j-tp','j-lot','j-pnl','j-notes'].forEach(id=>setText(id,''));
+  initJDT(); selPsy=[];
+  document.querySelectorAll('.ptag').forEach(t=>t.classList.remove('on'));
+  setHTML('j-pnl-idr','');
+}
+
+function delJ(id) {
+  if(!confirm('Delete trade?'))return;
+  saveJ2(getJ().filter(r=>r.id!==id));renderJournal();updateJStats();toast('🗑 Deleted.');
+}
+
+function calcRR(r) {
+  if(!r.entry||!r.sl||!r.tp)return'—';
+  const rs=Math.abs(+r.entry-+r.sl),rw=Math.abs(+r.entry-+r.tp);
+  return rs===0?'—':'1:'+(rw/rs).toFixed(1);
+}
+
+function renderJournal() {
+  const data=getJ().slice(0,30),tb=$('j-body');
+  if(!tb)return;
+  if(!data.length){tb.innerHTML='<tr><td colspan="14"><div class="no-data"><span class="nd-ico">📋</span>No trades yet.</div></td></tr>';return;}
+  tb.innerHTML=data.map(r=>`<tr>
+    <td style="font-size:10px">${r.datetime?.replace('T',' ')||'—'}</td>
+    <td style="color:var(--gold)">${r.pair}</td>
+    <td><span class="badge b-${(r.type||'').toLowerCase()}">${r.type}</span></td>
+    <td>${r.entry}</td>
+    <td style="color:var(--cr)">${r.sl||'—'}</td>
+    <td style="color:var(--em)">${r.tp||'—'}</td>
+    <td>${r.lot||'—'}</td>
+    <td>${fmtUSD(r.pnl)}</td>
+    <td style="color:var(--cy);font-size:10px">${r.idrRate?fmtIDR(r.pnl,r.idrRate):fmtIDR(r.pnl)}</td>
+    <td><span class="badge b-${(r.status||'').toLowerCase()}">${r.status}</span></td>
+    <td style="color:var(--t2);font-size:10px">${r.reason}</td>
+    <td style="color:var(--t3);font-size:9px">${r.psych||'—'}</td>
+    <td style="color:var(--gold)">${calcRR(r)}</td>
+    <td><button onclick="delJ(${r.id})" style="background:none;border:1px solid var(--b1);color:var(--t3);border-radius:3px;padding:3px 7px;cursor:pointer;font-size:10px;">DEL</button></td>
+  </tr>`).join('');
+}
+
+function updateJStats() {
+  try {
+    const data=getJ(),total=data.length;
+    const wins=data.filter(r=>r.status==='WIN').length;
+    const wr=total>0?((wins/total)*100).toFixed(1):0;
+    const tpnl=data.reduce((s,r)=>s+(+r.pnl||0),0);
+    const pls=data.map(r=>+r.pnl||0);
+    const best=pls.length?Math.max(...pls):0,worst=pls.length?Math.min(...pls):0;
+    const rrV=data.map(r=>calcRR(r)).filter(v=>v!=='—').map(v=>+v.split(':')[1]);
+    const avgRR=rrV.length?(rrV.reduce((a,b)=>a+b,0)/rrV.length).toFixed(1):0;
+    setTxt('st-total', total);
+    setTxt('st-wr', wr+'%'); setCls('st-wr', 'stat-val '+(wr>=50?'g':'r'));
+    setHTML('st-pl', fmtUSD(tpnl));
+    setTxt('st-pl-idr', fmtIDR(tpnl));
+    setTxt('st-rr', '1:'+avgRR);
+    setTxt('st-best', '+$'+f2(best));
+    setTxt('st-worst', '-$'+f2(Math.abs(worst)));
+    setTxt('st-wl', wins+' W / '+(total-wins)+' L');
+    setHTML('kv-pl', fmtUSD(tpnl));
+    setTxt('kv-pl-idr', fmtIDR(tpnl));
+    setTxt('kv-wr', wr+'%');
+    setTxt('kv-wr-sub', wins+' wins of '+total+' trades');
+    setTxt('j-badge', total);
+  } catch(e) { console.warn('[updateJStats]', e); }
+}
+
+function exportCSV() {
+  const d=getJ(); if(!d.length){toast('⚠ No data!');return;}
+  const h=['ID','Datetime','Pair','Type','Entry','SL','TP','Lot','PnL_USD','PnL_IDR','Status','Reason','Psychology','Notes','RR'];
+  const rows=d.map(r=>[r.id,r.datetime,r.pair,r.type,r.entry,r.sl,r.tp,r.lot,r.pnl,r.idrRate?Math.round((+r.pnl||0)*r.idrRate):'',r.status,r.reason,r.psych,`"${(r.notes||'').replace(/"/g,'""')}"`,calcRR(r)].join(','));
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([[h,...rows].join('\n')],{type:'text/csv'}));
+  a.download=`atc_v3_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); toast('✅ CSV exported!');
+}
+
+function clearAll() {
+  if(!confirm('DELETE ALL journal data?'))return;
+  localStorage.removeItem(C.J_KEY);renderJournal();updateJStats();toast('🗑 Cleared.');
+}
+
+function exportAllData() {
+  const all={journal:getJ(),settings:CFG,calendar:JSON.parse(localStorage.getItem(C.MC_KEY)||'[]')};
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));
+  a.download=`atc_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); toast('✅ Backup exported!');
+}
+
+/* ══════════ ECONOMIC CALENDAR ══════════ */
+const HI_KW=['nfp','non-farm','payroll','fomc','federal','cpi','consumer price','interest rate','inflation','pce','gdp','unemployment','jolts','ppi','ism','retail','durable','jackson hole','powell'];
+function isHigh(t='',i=''){return(i||'').toLowerCase()==='high'||HI_KW.some(k=>t.toLowerCase().includes(k));}
+
+async function fetchCal() {
+  const con=$('cal-con');
+  if(con) con.innerHTML='<div style="text-align:center;padding:28px;font-family:var(--fm);font-size:11px;color:var(--t3);"><span style="display:inline-block;animation:rotSpin 1s linear infinite;margin-right:7px;">⟳</span>Loading…</div>';
+  let live=[];
+  try {
+    const res=await fetch(C.CAL_URL);
+    if(res.ok){
+      const raw=await res.json();
+      live=raw.filter(e=>{const c=(e.country||'').toLowerCase();return(c==='usd'||c==='us')&&isHigh(e.title,e.impact);})
+        .map(e=>({id:'ff_'+(e.id||Math.random().toString(36).slice(2)),date:e.date,title:e.title,impact:e.impact,forecast:e.forecast,previous:e.previous,actual:e.actual,src:'live'}));
+    }
+  } catch(e){console.warn('[fetchCal]',e.message);}
+  const manual=JSON.parse(localStorage.getItem(C.MC_KEY)||'[]').map(m=>({id:m.id,date:m.datetime,title:m.name,impact:m.impact,forecast:m.forecast,src:'manual'}));
+  let all=[...live,...manual].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(!all.length) all=[...getStaticCal(),...manual].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  S.cal=all;
+  renderCal(all, live.length>0);
+}
+fetchCal();
+
+function getStaticCal(){
+  const b=new Date(),mk=d=>{const dt=new Date(b);dt.setDate(dt.getDate()+d);dt.setHours(20,30,0,0);return dt.toISOString();};
+  return[{id:'s1',date:mk(5),title:'Non-Farm Payrolls (NFP)',impact:'High',forecast:'~185K',previous:'177K',src:'static'},
+    {id:'s2',date:mk(10),title:'CPI (Consumer Price Index)',impact:'High',forecast:'~3.2%',previous:'3.4%',src:'static'},
+    {id:'s3',date:mk(17),title:'FOMC Meeting / Rate Decision',impact:'High',forecast:'Hold',previous:'5.25%',src:'static'},
+    {id:'s4',date:mk(24),title:'GDP Advance Estimate',impact:'High',forecast:'~1.8%',previous:'1.6%',src:'static'},
+    {id:'s5',date:mk(3),title:'PCE Price Index (Core)',impact:'High',forecast:'~2.6%',previous:'2.8%',src:'static'}];
+}
+
+function renderCal(evs,isLive){
+  const con=$('cal-con'),now=new Date();
+  if(!con)return;
+  if(!evs.length){con.innerHTML='<div class="no-data"><span class="nd-ico">📅</span>No events.</div>';return;}
+  const future=evs.filter(e=>new Date(e.date)>=now).slice(0,12);
+  const past=evs.filter(e=>new Date(e.date)<now).slice(-4);
+  const show=[...future,...past].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const srcTag=isLive?'<span class="live-tag" style="margin-left:6px;">LIVE</span>':'<span style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-left:6px;">STATIC</span>';
+  con.innerHTML=`<div style="font-family:var(--fm);font-size:10px;color:var(--t3);margin-bottom:12px;">${show.length} USD high-impact events ${srcTag}</div>
+    ${show.map((ev,i)=>buildEvHTML(ev,i,now)).join('')}`;
+}
+
+function buildEvHTML(ev,idx,now){
+  const dt=new Date(ev.date),isPast=dt<now,isSoon=!isPast&&(dt-now)<3600000;
+  const ic=(ev.impact||'').toLowerCase()==='high'?'imp-h':(ev.impact||'').toLowerCase()==='medium'?'imp-m':'imp-l';
+  const ds=dt.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
+  const ts=dt.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  let actH='';
+  if(ev.actual){const a=parseFloat(ev.actual),f=parseFloat(ev.forecast||'0');const ac=!isNaN(a)&&!isNaN(f)?(a>f?'beat':'miss'):'';actH=`<span class="${ac}">Actual: ${ev.actual}</span>`;}
+  const delBtn=ev.src==='manual'?`<button onclick="event.stopPropagation();delManual('${ev.id}')" style="background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:2px 4px;">🗑</button>`:'';
+  return`<div class="ev-row${isSoon?' soon':''}${isPast?' past':''}" onclick="togEvAI(${idx})">
+    <div class="ev-dt">${ds}<br><strong>${ts}</strong><br>${isPast?'<span style="font-size:9px;color:var(--t3);">DONE</span>':''}</div>
+    <div class="ev-imp ${ic}">${ev.impact||'—'}</div>
+    <div class="ev-body">
+      <div class="ev-name">${ev.title||'—'}${isSoon?'<span style="color:var(--cr);font-size:9px;margin-left:7px;">⚠ SOON</span>':''}</div>
+      <div class="ev-meta">
+        ${ev.forecast?`<span>Forecast: ${ev.forecast}</span>`:''}
+        ${ev.previous?`<span>Prev: ${ev.previous}</span>`:''}
+        ${actH}<span style="color:var(--t3);">▸ Click for AI</span>
+      </div>
+      <div class="ev-ai-panel" id="eai-${idx}">
+        <div class="ev-ai-title">🤖 AI LOGIC ANALYSIS — ${ev.title||''}</div>
+        <div class="ev-ai-body">${getEvAI(ev)}</div>
+        ${S.aiKey?`<button onclick="event.stopPropagation();deepEvAI(${idx},'${(ev.title||'').replace(/'/g,'')}')" style="margin-top:8px;padding:5px 12px;border:1px solid rgba(139,92,246,.3);border-radius:3px;background:rgba(139,92,246,.08);color:var(--vi);font-size:9px;cursor:pointer;font-family:var(--fm);">🤖 DEEP AI ANALYSIS</button>`:''}
+      </div>
+    </div>${delBtn}
+  </div>`;
+}
+
+function togEvAI(i){ const e=$('eai-'+i); if(e) e.classList.toggle('open'); }
+
+async function deepEvAI(idx, title) {
+  const panel=$('eai-'+idx);
+  const body=panel?.querySelector('.ev-ai-body');
+  if(!body) return;
+  body.innerHTML+='<br><div class="ai-thinking"><span class="spin">⟳</span>AI analyzing…</div>';
+  const sys='SMC expert XAUUSD trader. Give specific price-level strategy for this economic event. Bahasa Indonesia. Concise.';
+  const r=await askAI(`Analisis mendalam dampak "${title}" terhadap XAUUSD ($${f2(S.xau)}). Level supply/demand, bias, strategi entry spesifik.`,sys);
+  body.innerHTML+=`<br><strong style="color:var(--vi)">🤖 AI DEEP:</strong><br>${r.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>')}`;
+}
+
+function getEvAI(ev){
+  const t=(ev.title||'').toLowerCase(),ac=ev.actual||'',fc=ev.forecast||'';
+  let dir=null;
+  if(ac&&fc){const a=parseFloat(ac),f=parseFloat(fc);if(!isNaN(a)&&!isNaN(f))dir=a>f?'beat':a<f?'miss':'inline';}
+  if(t.includes('nfp')||t.includes('non-farm')||t.includes('payroll')){
+    if(dir==='beat')return`<span style="color:var(--cr)">▼ NFP BEAT → Data Positif USD → Cari Rejection di Supply XAUUSD</span><br>Tunggu 5-10 menit post-release. Konfirmasi M5/M15.`;
+    if(dir==='miss')return`<span style="color:var(--em)">▲ NFP MISS → Data Negatif USD → Cari Entry di Demand Zone XAUUSD</span><br>Waspadai fakeout awal. Target: previous high.`;
+    return`⚠ <strong>NFP = Event paling volatile XAUUSD.</strong><br><span style="color:var(--cr)">Beat → Cari Rejection di Supply XAUUSD.</span><br><span style="color:var(--em)">Miss → Cari Entry di Demand Zone XAUUSD.</span><br><span style="color:var(--gold)">⛔ Jangan trade 30 menit sebelum rilis!</span>`;
+  }
+  if(t.includes('fomc')||t.includes('federal')||t.includes('interest rate'))
+    return`<strong>FOMC = Event paling market-moving.</strong><br><span style="color:var(--cr)">Hawkish/Hike → USD↑↑ → Cari Rejection di Supply XAUUSD</span><br><span style="color:var(--em)">Dovish/Pause → USD↓↓ → Cari Entry di Demand Zone XAUUSD</span><br><span style="color:var(--gold)">⛔ Jangan trade saat press conference berlangsung!</span>`;
+  if(t.includes('cpi')||t.includes('consumer price'))
+    return`<strong>CPI = Ukuran inflasi utama.</strong><br><span style="color:var(--cr)">CPI > Forecast → USD↑ → Cari Supply XAUUSD</span><br><span style="color:var(--em)">CPI < Forecast → USD↓ → Cari Demand XAUUSD</span>`;
+  if(t.includes('pce'))return`<strong>PCE = Indikator inflasi favorit Fed.</strong><br><span style="color:var(--cr)">PCE > Forecast → Cari Supply XAUUSD.</span><br><span style="color:var(--em)">PCE < Forecast → Cari Demand XAUUSD.</span>`;
+  if(t.includes('gdp'))return dir==='beat'?`<span style="color:var(--cr)">▼ GDP Beat → Risk-on → Cari Rejection di Supply XAUUSD</span>`:dir==='miss'?`<span style="color:var(--em)">▲ GDP Miss → Risk-off → Cari Entry di Demand XAUUSD</span>`:`GDP: Beat → Supply | Miss → Demand XAUUSD`;
+  return`<span style="color:var(--gold)">High-Impact USD Event — monitor reaksi DXY &amp; XAUUSD.</span><br>Data beat → Cari Rejection di Supply XAUUSD<br>Data miss → Cari Entry di Demand XAUUSD`;
+}
+
+function openCalModal(){
+  const n=new Date();
+  const e=$('m-dt');if(e)e.value=new Date(n-n.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  const m=$('cal-modal');if(m)m.style.display='flex';
+}
+function closeCalModal(){const m=$('cal-modal');if(m)m.style.display='none';}
+function saveManual(){
+  const nm=getStr('m-name');if(!nm){toast('⚠ Enter event name!');return;}
+  const arr=JSON.parse(localStorage.getItem(C.MC_KEY)||'[]');
+  arr.push({id:'man_'+Date.now(),datetime:getStr('m-dt'),name:nm,impact:getStr('m-imp','High'),forecast:getStr('m-fore')});
+  localStorage.setItem(C.MC_KEY,JSON.stringify(arr));fetchCal();closeCalModal();toast('✅ Event added!');
+}
+function delManual(id){
+  if(!confirm('Delete?'))return;
+  localStorage.setItem(C.MC_KEY,JSON.stringify(JSON.parse(localStorage.getItem(C.MC_KEY)||'[]').filter(e=>e.id!==id)));
+  fetchCal();toast('🗑 Deleted.');
+}
+
+/* ══════════ INIT ══════════ */
+loadSettings();
+renderJournal();
+updateJStats();
+calcDD();
+window.addEventListener('resize',()=>{if($('pane-radar')?.classList.contains('active'))drawRadar();});
+</script>
+</body>
+</html>
